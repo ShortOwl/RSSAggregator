@@ -1,4 +1,4 @@
-package main
+package scraper
 
 import (
 	"encoding/xml"
@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// RSSFeed represents the top-level RSS XML structure.
 type RSSFeed struct {
 	Channel struct {
 		Title       string    `xml:"title"`
@@ -16,6 +17,7 @@ type RSSFeed struct {
 	} `xml:"channel"`
 }
 
+// RSSItem represents a single item in an RSS feed.
 type RSSItem struct {
 	Title       string `xml:"title"`
 	Link        string `xml:"link"`
@@ -23,12 +25,12 @@ type RSSItem struct {
 	PubDate     string `xml:"pubDate"`
 }
 
-func urlToFeed(url string) (RSSFeed, error) {
+// fetchFeed retrieves and parses an RSS feed from the given URL.
+func fetchFeed(url string) (RSSFeed, error) {
 	httpClient := http.Client{
 		Timeout: 10 * time.Second,
 	}
 	resp, err := httpClient.Get(url)
-
 	if err != nil {
 		return RSSFeed{}, err
 	}
@@ -38,12 +40,11 @@ func urlToFeed(url string) (RSSFeed, error) {
 	if err != nil {
 		return RSSFeed{}, err
 	}
-	rssFeed := RSSFeed{}
 
+	rssFeed := RSSFeed{}
 	err = xml.Unmarshal(data, &rssFeed)
 	if err != nil {
 		return RSSFeed{}, err
 	}
 	return rssFeed, nil
-
 }

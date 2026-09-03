@@ -1,2 +1,15 @@
-RSSAggregator
+# Environment
 .env
+
+# Binaries
+bin/
+RSSAggregator
+
+# OS files
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
