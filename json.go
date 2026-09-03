@@ -19,18 +19,20 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 		Error: msg,
 	})
 }
+
+// respondWithJSON — converts any Go value to JSON and writes it to the response
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 
-	data, err := json.Marshal(payload)
+	data, err := json.Marshal(payload) // Go struct → JSON bytes
 
 	if err != nil {
 		w.WriteHeader(500)
-		log.Printf("Failed to Marshal JSON respone : %v", payload)
+		log.Printf("Failed to Marshal JSON response : %v", payload)
 		return
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(data)
+	w.WriteHeader(code) // set HTTP status code
+	w.Write(data)       // write the body
 
 }
