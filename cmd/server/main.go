@@ -8,6 +8,7 @@ import (
 	"github.com/ShortOwl/RSSAggregator/internal/config"
 	"github.com/ShortOwl/RSSAggregator/internal/database"
 	"github.com/ShortOwl/RSSAggregator/internal/handler"
+	"github.com/ShortOwl/RSSAggregator/internal/middleware"
 	"github.com/ShortOwl/RSSAggregator/internal/scraper"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -27,7 +28,7 @@ func main() {
 
 	// 3. Create dependencies
 	db := database.New(conn) // anathi hu badhi sql queries run kravi sakis.
-	h := handler.New(db)
+	h := handler.New(db, cfg.JWTSecret)
 
 	// 4. Start background scraper
 	go scraper.Start(db, cfg.ScrapeConcurrency, cfg.ScrapeInterval)
@@ -49,16 +50,17 @@ func main() {
 	// Public routes
 	v1.Get("/healthz", h.HandleReadiness)
 	v1.Get("/err", h.HandleError)
-	v1.Post("/users", h.HandleCreateUser)
+	v1.Post("/register", h.HandleRegister)
+	v1.Post("/login", h.HandleLogin)
 	v1.Get("/feeds", h.HandleGetFeeds)
 
 	// Authenticated routes
-	v1.Get("/users", h.WithAuth(h.HandleGetUser))
-	v1.Post("/feeds", h.WithAuth(h.HandleCreateFeed))
-	v1.Post("/feed_follows", h.WithAuth(h.HandleCreateFeedFollow))
-	v1.Get("/feed_follows", h.WithAuth(h.HandleGetFeedFollows))
-	v1.Delete("/feed_follows/{feedFollowID}", h.WithAuth(h.HandleDeleteFeedFollow))
-	v1.Get("/posts", h.WithAuth(h.HandleGetPostsForUser))
+	v1.Get("/users", middleware.WithAuth(db, cfg.JWTSecret, h.HandleGetUser))
+	v1.Post("/feeds", middleware.WithAuth(db, cfg.JWTSecret, h.HandleCreateFeed))
+	v1.Post("/feed_follows", middleware.WithAuth(db, cfg.JWTSecret, h.HandleCreateFeedFollow))
+	v1.Get("/feed_follows", middleware.WithAuth(db, cfg.JWTSecret, h.HandleGetFeedFollows))
+	v1.Delete("/feed_follows/{feedFollowID}", middleware.WithAuth(db, cfg.JWTSecret, h.HandleDeleteFeedFollow))
+	v1.Get("/posts", middleware.WithAuth(db, cfg.JWTSecret, h.HandleGetPostsForUser))
 
 	router.Mount("/v1", v1)
 

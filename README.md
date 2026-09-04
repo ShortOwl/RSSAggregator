@@ -17,11 +17,11 @@ A production-grade RSS feed aggregation API built in Go. Users can subscribe to 
 ```
 cmd/server/          → Entry point — wires dependencies and starts the server
 internal/
-  ├── auth/          → API key extraction from HTTP headers
+  ├── auth/          → Password hashing and JWT operations
   ├── config/        → Centralized environment configuration
   ├── database/      → Auto-generated database layer (sqlc)
   ├── handler/       → HTTP request handlers (users, feeds, posts)
-  ├── middleware/     → Authentication middleware
+  ├── middleware/    → JWT and API-key authentication middleware
   ├── model/         → API response models and DB-to-API converters
   ├── response/      → JSON response helpers
   └── scraper/       → Background RSS feed scraping engine
@@ -36,10 +36,15 @@ sql/
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/v1/healthz` | Health check |
-| `POST` | `/v1/users` | Create a new user |
+| `POST` | `/v1/register` | Register with name, email, and password |
+| `POST` | `/v1/login` | Log in with email and password |
 | `GET` | `/v1/feeds` | List all feeds |
 
-### Authenticated (requires `Authorization: apikey <key>`)
+### Authenticated
+
+Protected endpoints accept either `Authorization: Bearer <jwt>` or
+`Authorization: ApiKey <key>`.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/v1/users` | Get current user |
@@ -69,9 +74,14 @@ sql/
    ```
    PORT=8080
    DB_URL=postgres://username:password@localhost:5432/rssagg?sslmode=disable
+   JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
    ```
 
 3. **Run database migrations**
+
+   Migration 007 makes email and password hashes mandatory. Remove any
+   passwordless tutorial users before applying it.
+
    ```bash
    make migrate-up
    ```

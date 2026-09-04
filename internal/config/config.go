@@ -13,6 +13,7 @@ import (
 type Config struct {
 	Port              string
 	DatabaseURL       string
+	JWTSecret         string
 	ScrapeInterval    time.Duration
 	ScrapeConcurrency int
 }
@@ -34,9 +35,18 @@ func Load() Config {
 		log.Fatal("DB_URL is not found in the environment")
 	}
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET is not found in the environment")
+	}
+	if len(jwtSecret) < 32 {
+		log.Fatal("JWT_SECRET must be at least 32 characters")
+	}
+
 	return Config{
 		Port:              port,
 		DatabaseURL:       dbURL,
+		JWTSecret:         jwtSecret,
 		ScrapeInterval:    10 * time.Minute,
 		ScrapeConcurrency: 10,
 	}

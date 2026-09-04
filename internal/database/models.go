@@ -41,9 +41,11 @@ type Post struct {
 }
 
 type User struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Name      string
-	ApiKey    string
+	ID           uuid.UUID
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	Name         string
+	ApiKey       string
+	Email        string
+	PasswordHash string
 }
