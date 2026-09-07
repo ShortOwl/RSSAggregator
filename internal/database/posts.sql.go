@@ -57,19 +57,42 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 }
 
 const getPostsForUser = `-- name: GetPostsForUser :many
-SELECT posts.id, posts.created_at, posts.updated_at, posts.title, posts.description, posts.published_at, posts.url, posts.feed_id from posts
+SELECT posts.id, posts.created_at, posts.updated_at, posts.title, posts.description, posts.published_at, posts.url, posts.feed_id FROM posts
 JOIN feed_follows ON posts.feed_id = feed_follows.feed_id
-WHERE feed_follows.user_id = $1 ORDER BY posts.published_at DESC
-LIMIT $2
+WHERE feed_follows.user_id = $1
+AND ($2::uuid IS NULL or posts.feed_id = $2)
+AND (
+  $3::text = ''
+  OR
+  to_tsvector('english',posts.title || ' ' || COALESCE(posts.description,''))
+  @@ plainto_tsquery('english',$3)
+)
+AND (
+  $4::timestamp IS NULL
+  OR (posts.published_at,posts.id) < ($4,$5::uuid)
+)
+ORDER BY posts.published_at DESC, posts.id DESC
+LIMIT $6
 `
 
 type GetPostsForUserParams struct {
-	UserID uuid.UUID
-	Limit  int32
+	UserID            uuid.UUID
+	FeedID            uuid.NullUUID
+	Search            string
+	CursorPublishedAt sql.NullTime
+	CursorID          uuid.NullUUID
+	Limit             int32
 }
 
 func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsForUser, arg.UserID, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, getPostsForUser,
+		arg.UserID,
+		arg.FeedID,
+		arg.Search,
+		arg.CursorPublishedAt,
+		arg.CursorID,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}

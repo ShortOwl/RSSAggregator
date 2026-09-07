@@ -4,7 +4,22 @@ VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetFeeds :many
-SELECT * FROM feeds;
+SELECT * FROM feeds
+WHERE (
+    sqlc.arg('search')::text = ''
+    OR name ILIKE '%' || sqlc.arg('search') || '%'
+    OR url ILIKE '%' || sqlc.arg('search') || '%'
+  )
+  AND (
+    sqlc.narg('cursor_created_at')::timestamp IS NULL
+    OR (created_at, id) < (
+      sqlc.narg('cursor_created_at'),
+      sqlc.narg('cursor_id')::uuid
+    )
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT sqlc.arg('limit');
+
 
 -- name: GetNextFeedsToFetch :many
 SELECT * from feeds ORDER BY  last_fetched_at ASC NULLS FIRST

@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,10 +52,36 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 
 const getFeeds = `-- name: GetFeeds :many
 SELECT id, created_at, updated_at, name, url, user_id, last_fetched_at FROM feeds
+WHERE (
+    $1::text = ''
+    OR name ILIKE '%' || $1 || '%'
+    OR url ILIKE '%' || $1 || '%'
+  )
+  AND (
+    $2::timestamp IS NULL
+    OR (created_at, id) < (
+      $2,
+      $3::uuid
+    )
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT $4
 `
 
-func (q *Queries) GetFeeds(ctx context.Context) ([]Feed, error) {
-	rows, err := q.db.QueryContext(ctx, getFeeds)
+type GetFeedsParams struct {
+	Search          string
+	CursorCreatedAt sql.NullTime
+	CursorID        uuid.NullUUID
+	Limit           int32
+}
+
+func (q *Queries) GetFeeds(ctx context.Context, arg GetFeedsParams) ([]Feed, error) {
+	rows, err := q.db.QueryContext(ctx, getFeeds,
+		arg.Search,
+		arg.CursorCreatedAt,
+		arg.CursorID,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
