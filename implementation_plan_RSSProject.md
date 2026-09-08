@@ -101,18 +101,23 @@ Add GIN index on `posts.title` and `posts.description` for PostgreSQL full-text 
 
 ---
 
-### Phase 4 — New Features (Bookmarks, Read Status, Categories)
+### Phase 4 — Bookmarks and Read Status
 
-These features make the project feel like a **real product**, not a tutorial exercise.
+Add user-specific post organization and reading state without changing feed ownership or introducing unrelated product concepts.
+
+#### Objectives
+- Let authenticated users save and remove bookmarks.
+- Return a user's bookmarked posts with cursor-based pagination.
+- Let authenticated users mark posts as read or unread.
+- Allow users to request only unread posts from feeds they follow.
 
 #### [NEW] `sql/schema/009_bookmarks.sql`
 ```sql
 CREATE TABLE bookmarks (
-    id UUID PRIMARY KEY,
-    created_at TIMESTAMP NOT NULL,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    UNIQUE (user_id, post_id)
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, post_id)
 );
 ```
 
@@ -126,29 +131,29 @@ CREATE TABLE read_posts (
 );
 ```
 
-#### [NEW] `sql/schema/011_categories.sql`
-```sql
-CREATE TABLE categories (
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE (name, user_id)
-);
+#### [NEW] `sql/queries/bookmarks.sql`
+- Save a bookmark for the authenticated user and post. Repeating the request must not create a duplicate.
+- Remove a bookmark by authenticated user and post.
+- List the authenticated user's bookmarked posts with cursor-based pagination.
 
-CREATE TABLE feed_categories (
-    feed_id UUID NOT NULL REFERENCES feeds(id) ON DELETE CASCADE,
-    category_id UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
-    PRIMARY KEY (feed_id, category_id)
-);
-```
+#### [NEW] `sql/queries/read_status.sql`
+- Mark a post as read with an idempotent insert or update.
+- Mark a post as unread by deleting the user's read-status row.
 
-#### [NEW] Handlers
-- `POST/DELETE /v1/bookmarks` — save/unsave posts
-- `GET /v1/bookmarks` — get bookmarked posts (paginated)
-- `POST /v1/posts/{postID}/read` — mark as read
-- `GET /v1/posts?unread=true` — filter unread
-- CRUD for `/v1/categories`
-- `POST /v1/feeds/{feedID}/categories` — assign feed to category
+#### [MODIFY] `sql/queries/posts.sql`
+- Add an optional unread-only filter scoped to the authenticated user.
+- Preserve the existing feed, search, and cursor filters.
+
+#### [NEW] Authenticated Handlers and Routes
+- `PUT /v1/posts/{postID}/bookmark` — save a post as a bookmark
+- `DELETE /v1/posts/{postID}/bookmark` — remove a bookmark
+- `GET /v1/bookmarks?limit=&cursor=` — get bookmarked posts one page at a time
+- `PUT /v1/posts/{postID}/read` — mark a post as read
+- `DELETE /v1/posts/{postID}/read` — mark a post as unread
+- `GET /v1/posts?unread=true&limit=&cursor=` — get unread posts one page at a time
+- Return `204 No Content` after successfully saving, removing, marking read, or marking unread.
+- Check that the post exists and is available to the authenticated user before saving a bookmark or marking it as read.
+- Apply the existing authentication middleware to every bookmark and read-status route.
 
 ---
 

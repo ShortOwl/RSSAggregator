@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -52,6 +53,14 @@ func (h *Handler) HandleGetPostsForUser(w http.ResponseWriter, r *http.Request, 
 		FeedID: feed_id,
 		Search: strings.TrimSpace(r.URL.Query().Get("search")),
 		Limit:  limit + 1,
+	}
+
+	if value := r.URL.Query().Get("unread"); value != "" {
+		params.UnreadOnly, err = strconv.ParseBool(value)
+		if err != nil {
+			response.WithError(w, http.StatusBadRequest, "invalid unread value")
+			return
+		}
 	}
 
 	if cursor != nil {

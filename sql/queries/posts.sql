@@ -16,6 +16,14 @@ AND (
   @@ plainto_tsquery('english',sqlc.arg('search'))
 )
 AND (
+  NOT sqlc.arg('unread_only')::boolean
+  OR NOT EXISTS (
+    SELECT 1 FROM read_posts
+    WHERE read_posts.user_id = sqlc.arg('user_id')
+      AND read_posts.post_id = posts.id
+  )
+)
+AND (
   sqlc.narg('cursor_published_at')::timestamp IS NULL
   OR (posts.published_at,posts.id) < (sqlc.narg('cursor_published_at'),sqlc.narg('cursor_id')::uuid)
 )

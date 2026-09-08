@@ -53,6 +53,13 @@ Protected endpoints accept either `Authorization: Bearer <jwt>` or
 | `GET` | `/v1/feed_follows` | List followed feeds |
 | `DELETE` | `/v1/feed_follows/{id}` | Unfollow a feed |
 | `GET` | `/v1/posts` | Get posts from followed feeds |
+| `PUT` | `/v1/posts/{postID}/bookmark` | Bookmark a post |
+| `DELETE` | `/v1/posts/{postID}/bookmark` | Remove a bookmark |
+| `GET` | `/v1/bookmarks` | List bookmarked posts with cursor pagination |
+| `PUT` | `/v1/posts/{postID}/read` | Mark a post as read |
+| `DELETE` | `/v1/posts/{postID}/read` | Mark a post as unread |
+
+Use `GET /v1/posts?unread=true` to return only unread posts.
 
 ## Getting Started
 

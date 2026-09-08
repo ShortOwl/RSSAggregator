@@ -62,6 +62,14 @@ func main() {
 	v1.Delete("/feed_follows/{feedFollowID}", middleware.WithAuth(db, cfg.JWTSecret, h.HandleDeleteFeedFollow))
 	v1.Get("/posts", middleware.WithAuth(db, cfg.JWTSecret, h.HandleGetPostsForUser))
 
+	// Phase 4 changes
+	v1.Put("/posts/{postID}/read", middleware.WithAuth(db, cfg.JWTSecret, h.HandleMarkPostAsRead))
+	v1.Delete("/posts/{postID}/read", middleware.WithAuth(db, cfg.JWTSecret, h.HandleMarkPostAsUnread))
+	// Bookmark routes
+	v1.Put("/posts/{postID}/bookmark", middleware.WithAuth(db, cfg.JWTSecret, h.HandleBookmarkPost))
+	v1.Delete("/posts/{postID}/bookmark", middleware.WithAuth(db, cfg.JWTSecret, h.HandleUnbookmarkPost))
+	v1.Get("/bookmarks", middleware.WithAuth(db, cfg.JWTSecret, h.HandleGetBookmarks))
+
 	router.Mount("/v1", v1)
 
 	// 7. Start HTTP server

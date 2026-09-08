@@ -68,17 +68,26 @@ AND (
   @@ plainto_tsquery('english',$3)
 )
 AND (
-  $4::timestamp IS NULL
-  OR (posts.published_at,posts.id) < ($4,$5::uuid)
+  NOT $4::boolean
+  OR NOT EXISTS (
+    SELECT 1 FROM read_posts
+    WHERE read_posts.user_id = $1
+      AND read_posts.post_id = posts.id
+  )
+)
+AND (
+  $5::timestamp IS NULL
+  OR (posts.published_at,posts.id) < ($5,$6::uuid)
 )
 ORDER BY posts.published_at DESC, posts.id DESC
-LIMIT $6
+LIMIT $7
 `
 
 type GetPostsForUserParams struct {
 	UserID            uuid.UUID
 	FeedID            uuid.NullUUID
 	Search            string
+	UnreadOnly        bool
 	CursorPublishedAt sql.NullTime
 	CursorID          uuid.NullUUID
 	Limit             int32
@@ -89,6 +98,7 @@ func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams
 		arg.UserID,
 		arg.FeedID,
 		arg.Search,
+		arg.UnreadOnly,
 		arg.CursorPublishedAt,
 		arg.CursorID,
 		arg.Limit,
