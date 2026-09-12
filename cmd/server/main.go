@@ -2,8 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/ShortOwl/RSSAggregator/internal/config"
 	"github.com/ShortOwl/RSSAggregator/internal/database"
@@ -12,6 +13,7 @@ import (
 	"github.com/ShortOwl/RSSAggregator/internal/scraper"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"golang.org/x/time/rate"
 
 	_ "github.com/lib/pq" // PostgreSQL driver — the underscore means "import for side effects only"
 )
@@ -20,10 +22,19 @@ func main() {
 	// 1. Load configuration from environment
 	cfg := config.Load()
 
+	var logHandler slog.Handler = slog.NewTextHandler(os.Stdout, nil)
+	if os.Getenv("ENVIRONMENT") == "production" {
+		logHandler = slog.NewJSONHandler(os.Stdout, nil)
+	}
+	logger := slog.New(logHandler) // Handler decides output format like JSON,txt. And Logger recieves the events to write.
+	slog.SetDefault(logger)
+
 	// 2. Connect to PostgreSQL
 	conn, err := sql.Open("postgres", cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("Can't connect to the database:", err)
+		logger.Error("can't connect to the database", "error", err)
+		// logger.Error(message, key, value)
+		os.Exit(1)
 	}
 
 	// 3. Create dependencies
@@ -35,14 +46,19 @@ func main() {
 
 	// 5. Set up router
 	router := chi.NewRouter()
+	rateLimiter := middleware.NewRateLimiter(rate.Limit(5), 10)
+	router.Use(middleware.RequestID)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recovery)
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Link"},
+		ExposedHeaders:   []string{"Link", "X-Request-ID"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+	router.Use(rateLimiter.Limit)
 
 	// 6. Register routes
 	v1 := chi.NewRouter()
@@ -78,6 +94,9 @@ func main() {
 		Addr:    ":" + cfg.Port,
 	}
 
-	log.Printf("Server starting on port: %v", cfg.Port)
-	log.Fatal(srv.ListenAndServe())
+	logger.Info("Server starting", "port", cfg.Port)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Error("Server stopped", "error", err)
+		os.Exit(1)
+	}
 }
