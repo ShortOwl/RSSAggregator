@@ -1,6 +1,9 @@
 # Environment
 .env
 
+# Local handoff notes
+PROJECT_HANDOFF.md
+
 # Binaries
 bin/
 RSSAggregator
