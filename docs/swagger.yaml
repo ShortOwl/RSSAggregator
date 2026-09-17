@@ -1,0 +1,743 @@
+# Request and response schemas mirror internal/handler and internal/model.
+openapi: "3.0.3"
+info:
+  title: "RSS Aggregator API"
+  version: "1.0.0"
+  description: "Documentation of the existing API. Register or log in, then use Authorize with the returned JWT (without the Bearer prefix). API-key authentication is also supported. All routes share the rate limiter and return X-Request-ID for tracing."
+servers:
+  -
+    url: "/v1"
+    description: "API on the same server as this documentation"
+security:
+  -
+    BearerAuth: []
+  -
+    ApiKeyAuth: []
+tags:
+  -
+    name: "Health"
+  -
+    name: "Authentication"
+  -
+    name: "Users"
+  -
+    name: "Feeds"
+  -
+    name: "Feed follows"
+  -
+    name: "Posts"
+  -
+    name: "Read status"
+  -
+    name: "Bookmarks"
+paths:
+  /healthz:
+    get:
+      tags:
+        - "Health"
+      summary: "Check server readiness"
+      operationId: "getHealthz"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmptyObject"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      security: []
+      description: "Returns an empty JSON object. Does not check database connectivity."
+  /err:
+    get:
+      tags:
+        - "Health"
+      summary: "Return an example error"
+      operationId: "getErr"
+      responses:
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      security: []
+      description: "Always returns 400 with error: Something went wrong :("
+  /register:
+    post:
+      tags:
+        - "Authentication"
+      summary: "Register a user"
+      operationId: "postRegister"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+  /login:
+    post:
+      tags:
+        - "Authentication"
+      summary: "Log in"
+      operationId: "postLogin"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+  /feeds:
+    get:
+      tags:
+        - "Feeds"
+      summary: "List feeds"
+      operationId: "getFeeds"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      security: []
+      description: "Newest created feeds first, with ID as the tie-breaker."
+      parameters:
+        -
+          $ref: "#/components/parameters/Limit"
+        -
+          $ref: "#/components/parameters/Cursor"
+        -
+          $ref: "#/components/parameters/FeedSearch"
+    post:
+      tags:
+        - "Feeds"
+      summary: "Create a feed"
+      operationId: "postFeeds"
+      responses:
+        "201":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feed"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Creates a feed owned by the authenticated user. Does not automatically follow it."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeedRequest"
+  /users:
+    get:
+      tags:
+        - "Users"
+      summary: "Get the current user"
+      operationId: "getUsers"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /feed_follows:
+    post:
+      tags:
+        - "Feed follows"
+      summary: "Follow a feed"
+      operationId: "postFeedFollows"
+      responses:
+        "201":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeedFollow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Database failures, including duplicate follows or a nonexistent feed, return 500."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeedFollowRequest"
+    get:
+      tags:
+        - "Feed follows"
+      summary: "List followed feeds"
+      operationId: "getFeedFollows"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/FeedFollow"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /feed_follows/{feedFollowID}:
+    delete:
+      tags:
+        - "Feed follows"
+      summary: "Unfollow a feed"
+      operationId: "deleteFeedFollowsFeedFollowID"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Deletes only a follow owned by the authenticated user. Returns 204 even if no matching follow exists."
+      parameters:
+        -
+          $ref: "#/components/parameters/FeedFollowID"
+  /posts:
+    get:
+      tags:
+        - "Posts"
+      summary: "List posts from followed feeds"
+      operationId: "getPosts"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Newest published posts first, with ID as the tie-breaker."
+      parameters:
+        -
+          $ref: "#/components/parameters/Limit"
+        -
+          $ref: "#/components/parameters/Cursor"
+        -
+          $ref: "#/components/parameters/PostSearch"
+        -
+          $ref: "#/components/parameters/FeedID"
+        -
+          $ref: "#/components/parameters/Unread"
+  /posts/{postID}/read:
+    put:
+      tags:
+        - "Read status"
+      summary: "Mark a post as read"
+      operationId: "putPostsPostIDRead"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Requires a post in a followed feed. Repeated requests are safe."
+      parameters:
+        -
+          $ref: "#/components/parameters/PostID"
+    delete:
+      tags:
+        - "Read status"
+      summary: "Mark a post as unread"
+      operationId: "deletePostsPostIDRead"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Removes the current user's read status. Returns 204 even if no matching status exists."
+      parameters:
+        -
+          $ref: "#/components/parameters/PostID"
+  /posts/{postID}/bookmark:
+    put:
+      tags:
+        - "Bookmarks"
+      summary: "Bookmark a post"
+      operationId: "putPostsPostIDBookmark"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Requires a post in a followed feed. Repeated requests are safe."
+      parameters:
+        -
+          $ref: "#/components/parameters/PostID"
+    delete:
+      tags:
+        - "Bookmarks"
+      summary: "Remove a bookmark"
+      operationId: "deletePostsPostIDBookmark"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Removes only the current user's bookmark. Returns 204 even if no matching bookmark exists."
+      parameters:
+        -
+          $ref: "#/components/parameters/PostID"
+  /bookmarks:
+    get:
+      tags:
+        - "Bookmarks"
+      summary: "List bookmarked posts"
+      operationId: "getBookmarks"
+      responses:
+        "200":
+          description: "Successful response."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      description: "Newest published posts first, with ID as the tie-breaker. Includes saved posts even if their feeds have since been unfollowed."
+      parameters:
+        -
+          $ref: "#/components/parameters/Limit"
+        -
+          $ref: "#/components/parameters/Cursor"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"
+    ApiKeyAuth:
+      type: "apiKey"
+      in: "header"
+      name: "Authorization"
+      description: "Enter the complete value: ApiKey <your-api-key>. This is an alternative to Bearer JWT."
+  parameters:
+    Limit:
+      name: "limit"
+      in: "query"
+      description: "Page size; defaults to 10 when omitted or empty."
+      schema:
+        type: "integer"
+        minimum: 1
+        maximum: 100
+        default: 10
+    Cursor:
+      name: "cursor"
+      in: "query"
+      description: "Opaque next_cursor from the previous page. Internally, unpadded URL-safe Base64 JSON containing timestamp and id. Omit or leave empty for the first page."
+      schema:
+        type: "string"
+    FeedSearch:
+      name: "search"
+      in: "query"
+      description: "Case-insensitive match against feed name or URL (SQL ILIKE; % and _ are wildcards). Surrounding whitespace is trimmed."
+      schema:
+        type: "string"
+    PostSearch:
+      name: "search"
+      in: "query"
+      description: "English full-text search over post title and description. Surrounding whitespace is trimmed."
+      schema:
+        type: "string"
+    FeedID:
+      name: "feed_id"
+      in: "query"
+      description: "Restrict posts to this followed feed."
+      schema:
+        type: "string"
+        format: "uuid"
+    Unread:
+      name: "unread"
+      in: "query"
+      description: "true returns only unread posts; false returns both read and unread posts. Also accepts Go boolean forms: 1, 0, t, f, T, F, TRUE, FALSE, True, False."
+      schema:
+        type: "boolean"
+        default: false
+    PostID:
+      name: "postID"
+      in: "path"
+      description: "Post UUID."
+      required: true
+      schema:
+        type: "string"
+        format: "uuid"
+    FeedFollowID:
+      name: "feedFollowID"
+      in: "path"
+      description: "Feed-follow UUID, not the feed UUID."
+      required: true
+      schema:
+        type: "string"
+        format: "uuid"
+  responses:
+    BadRequest:
+      description: "Malformed JSON, invalid input or invalid query/path parameter."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: "Missing, invalid or expired credentials; login may also reject an incorrect email or password."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: "Email is already registered."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: "Post does not exist or is not in a feed followed by this user."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: "Database, authentication or other internal server failure."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: "Rate limit exceeded: 5 requests/second with a burst of 10 per API key or IP address."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+      headers:
+        Retry-After:
+          description: "Seconds to wait before retrying."
+          schema:
+            type: "integer"
+            example: 1
+    NoContent:
+      description: "Operation completed; no response body."
+  schemas:
+    User:
+      type: "object"
+      required:
+        - "id"
+        - "created_at"
+        - "updated_at"
+        - "name"
+        - "email"
+        - "api_key"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        created_at:
+          type: "string"
+          format: "date-time"
+        updated_at:
+          type: "string"
+          format: "date-time"
+        name:
+          type: "string"
+        email:
+          type: "string"
+        api_key:
+          type: "string"
+    Feed:
+      type: "object"
+      required:
+        - "id"
+        - "created_at"
+        - "updated_at"
+        - "name"
+        - "url"
+        - "user_id"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        created_at:
+          type: "string"
+          format: "date-time"
+        updated_at:
+          type: "string"
+          format: "date-time"
+        name:
+          type: "string"
+        url:
+          type: "string"
+        user_id:
+          type: "string"
+          format: "uuid"
+    FeedFollow:
+      type: "object"
+      required:
+        - "id"
+        - "created_at"
+        - "updated_at"
+        - "user_id"
+        - "feed_id"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        created_at:
+          type: "string"
+          format: "date-time"
+        updated_at:
+          type: "string"
+          format: "date-time"
+        user_id:
+          type: "string"
+          format: "uuid"
+        feed_id:
+          type: "string"
+          format: "uuid"
+    Post:
+      type: "object"
+      required:
+        - "id"
+        - "created_at"
+        - "updated_at"
+        - "title"
+        - "description"
+        - "published_at"
+        - "url"
+        - "feed_id"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+        created_at:
+          type: "string"
+          format: "date-time"
+        updated_at:
+          type: "string"
+          format: "date-time"
+        title:
+          type: "string"
+        description:
+          type: "string"
+          nullable: true
+        published_at:
+          type: "string"
+          format: "date-time"
+        url:
+          type: "string"
+        feed_id:
+          type: "string"
+          format: "uuid"
+    RegisterRequest:
+      type: "object"
+      required:
+        - "name"
+        - "email"
+        - "password"
+      properties:
+        name:
+          type: "string"
+          description: "Required; surrounding whitespace is trimmed."
+          example: "Alex"
+        email:
+          type: "string"
+          format: "email"
+          description: "Trimmed and lowercased before validation and storage."
+          example: "alex@example.com"
+        password:
+          type: "string"
+          format: "password"
+          writeOnly: true
+          description: "Must be between 8 and 72 bytes (not characters)."
+          example: "example-password"
+    LoginRequest:
+      type: "object"
+      required:
+        - "email"
+        - "password"
+      properties:
+        email:
+          type: "string"
+          description: "Trimmed and lowercased before lookup."
+          example: "alex@example.com"
+        password:
+          type: "string"
+          format: "password"
+          writeOnly: true
+          example: "example-password"
+    CreateFeedRequest:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          example: "Go Blog"
+        url:
+          type: "string"
+          example: "https://go.dev/blog/feed.atom"
+      description: "Matches the existing handler: no name or URL validation is performed; omitted fields default to empty strings."
+    CreateFeedFollowRequest:
+      type: "object"
+      properties:
+        feed_id:
+          type: "string"
+          format: "uuid"
+      description: "Matches the existing handler: malformed UUID strings return 400; an omitted feed_id defaults to the zero UUID and is passed to the database."
+    AuthResponse:
+      type: "object"
+      required:
+        - "token"
+        - "token_type"
+      properties:
+        token:
+          type: "string"
+          description: "JWT access token."
+        token_type:
+          type: "string"
+          enum:
+            - "Bearer"
+    Error:
+      type: "object"
+      required:
+        - "error"
+      properties:
+        error:
+          type: "string"
+          example: "Invalid authentication credentials"
+    EmptyObject:
+      type: "object"
+      additionalProperties: false
+      example: {}
+    FeedPage:
+      type: "object"
+      required:
+        - "data"
+        - "next_cursor"
+      properties:
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Feed"
+        next_cursor:
+          type: "string"
+          description: "Pass this opaque value as cursor for the next page. Empty string means no more results."
+          example: ""
+    PostPage:
+      type: "object"
+      required:
+        - "data"
+        - "next_cursor"
+      properties:
+        data:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Post"
+        next_cursor:
+          type: "string"
+          description: "Pass this opaque value as cursor for the next page. Empty string means no more results."
+          example: ""

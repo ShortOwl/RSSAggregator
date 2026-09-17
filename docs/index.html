@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RSS Aggregator API Documentation</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.32.0/swagger-ui.css">
+</head>
+<body>
+  <p id="loading-message" role="status">Loading API documentation… If this message remains, check your internet connection and reload. <a href="/docs/swagger.yaml">Download the OpenAPI specification</a>.</p>
+  <noscript>Swagger UI requires JavaScript to be enabled.</noscript>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.32.0/swagger-ui-bundle.js" crossorigin="anonymous"></script>
+  <script>
+    window.onload = function () {
+      if (typeof SwaggerUIBundle !== "function") {
+        document.getElementById("loading-message").firstChild.textContent =
+          "Swagger UI could not load from the CDN. Check your internet connection and reload. ";
+        return;
+      }
+      SwaggerUIBundle({
+        url: "/docs/swagger.yaml",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        validatorUrl: null,
+        onComplete: function () {
+          document.getElementById("loading-message").hidden = true;
+        }
+      });
+    };
+  </script>
+</body>
+</html>

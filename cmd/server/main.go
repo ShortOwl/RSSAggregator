@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/ShortOwl/RSSAggregator/docs"
 	"github.com/ShortOwl/RSSAggregator/internal/config"
 	"github.com/ShortOwl/RSSAggregator/internal/database"
 	"github.com/ShortOwl/RSSAggregator/internal/handler"
@@ -58,9 +59,26 @@ func main() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-	router.Use(rateLimiter.Limit)
+	// Loading documentation must not consume the API request allowance.
+	router.Use(func(next http.Handler) http.Handler {
+		limited := rateLimiter.Limit(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				switch r.URL.Path {
+				case "/docs", "/docs/", "/docs/swagger.yaml":
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			limited.ServeHTTP(w, r)
+		})
+	})
 
 	// 6. Register routes
+	router.Get("/docs", docs.UI)
+	router.Get("/docs/", docs.UI)
+	router.Get("/docs/swagger.yaml", docs.Spec)
+
 	v1 := chi.NewRouter()
 
 	// Public routes

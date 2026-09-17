@@ -45,6 +45,7 @@ func GenerateJWT(userID uuid.UUID, secret string) (string, error) {
 	}
 
 	now := time.Now().UTC()
+	// meta-data that will be encoded in the token.
 	claims := jwt.RegisteredClaims{
 		Issuer:    TokenIssuer,
 		Subject:   userID.String(),
