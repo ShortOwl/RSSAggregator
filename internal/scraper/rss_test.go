@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestFetchFeed(t *testing.T) {
@@ -54,5 +55,38 @@ func TestFetchFeed(t *testing.T) {
 func TestFetchFeedInvalidURL(t *testing.T) {
 	if _, err := fetchFeed("://invalid"); err == nil {
 		t.Error("invalid URL should fail")
+	}
+}
+
+func TestParsePublishedAt(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		value string
+		want  time.Time
+	}{
+		{
+			name:  "numeric offset",
+			value: "Sat, 19 Sep 2026 23:01:57 +0000",
+			want:  time.Date(2026, time.September, 19, 23, 1, 57, 0, time.UTC),
+		},
+		{
+			name:  "GMT zone",
+			value: "Sat, 19 Sep 2026 23:01:57 GMT",
+			want:  time.Date(2026, time.September, 19, 23, 1, 57, 0, time.UTC),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parsePublishedAt(tt.value)
+			if err != nil {
+				t.Fatalf("parsePublishedAt(%q): %v", tt.value, err)
+			}
+			if !got.Equal(tt.want) {
+				t.Fatalf("parsePublishedAt(%q) = %v, want %v", tt.value, got, tt.want)
+			}
+		})
+	}
+
+	if _, err := parsePublishedAt("not a date"); err == nil {
+		t.Fatal("parsePublishedAt should reject an invalid date")
 	}
 }

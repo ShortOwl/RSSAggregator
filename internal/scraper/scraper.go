@@ -63,7 +63,7 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 			description.Valid = true
 		}
 
-		t, err := time.Parse(time.RFC1123Z, item.PubDate)
+		t, err := parsePublishedAt(item.PubDate)
 		if err != nil {
 			log.Printf("Couldn't parse date %v with err %v", item.PubDate, err)
 			continue
@@ -88,4 +88,15 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 	}
 
 	log.Printf("Feed %s collected, %v posts found", feed.Name, len(rssFeed.Channel.Item))
+}
+
+// parsePublishedAt accepts the two RFC 1123 variants commonly emitted by RSS
+// feeds: numeric offsets ("+0000") and named zones ("GMT").
+func parsePublishedAt(value string) (time.Time, error) {
+	parsed, err := time.Parse(time.RFC1123Z, value)
+	if err == nil {
+		return parsed, nil
+	}
+
+	return time.Parse(time.RFC1123, value)
 }

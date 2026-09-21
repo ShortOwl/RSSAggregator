@@ -1,288 +1,269 @@
-# RSS Aggregator → Production-Grade Go Backend
+# RSS Aggregator → Production-Grade Full-Stack Platform
 
-Transform this from a tutorial-level RSS scraper into a **portfolio-grade backend service** showcasing production Go engineering skills.
-
-## Why This Plan Matters for Your CV
-
-Interviewers look for **evidence of production thinking**, not just CRUD endpoints. This plan adds exactly the features that signal seniority: proper auth, observability, resilience, testing discipline, and deployment readiness. After this, you'll be able to describe the project as:
-
-> *"A production-grade RSS aggregation API built in Go — featuring JWT authentication, cursor-based pagination, full-text search, request rate limiting, structured logging, comprehensive test coverage, Swagger documentation, Dockerized deployment, and a background scraping pipeline with configurable concurrency."*
+Build a production-quality RSS aggregation platform that demonstrates strong **Go backend engineering** and a polished **Next.js frontend**. The backend is implemented and understood manually; the frontend is AI-assisted while every generated component is reviewed and understood.
 
 ---
 
-## Proposed Changes
+# Project Philosophy
 
-### Phase 1 — Project Structure & Code Quality
-
-Restructure the flat layout into an idiomatic Go project structure. This alone signals engineering maturity.
-
-#### [MODIFY] Project root — reorganize into packages
-
-```
-├── cmd/
-│   └── server/
-│       └── main.go            ← entry point
-├── internal/
-│   ├── auth/                  ← JWT + API key auth
-│   ├── config/                ← centralized config (env parsing)
-│   ├── database/              ← sqlc generated code
-│   ├── handler/               ← HTTP handlers (users, feeds, posts, etc.)
-│   ├── middleware/             ← auth, rate-limit, logging, recovery
-│   ├── model/                 ← API response models + converters
-│   ├── scraper/               ← RSS scraping engine
-│   └── validator/             ← input validation
-├── sql/
-│   ├── queries/
-│   └── schema/
-├── docs/                      ← Swagger/OpenAPI spec
-├── Dockerfile
-├── docker-compose.yml
-├── Makefile
-├── README.md
-├── sqlc.yaml
-├── go.mod
-└── go.sum
-```
-
-#### [NEW] `Makefile`
-Single-command build, test, lint, migrate, and run workflows.
-
-#### [NEW] `README.md`
-Professional README with architecture diagram, setup instructions, API overview, and tech stack. **This is the first thing recruiters see on GitHub.**
+* **Backend:** Handwritten, fully understood, beginner-friendly Go code.
+* **Frontend:** AI-assisted development with manual review of every component.
+* **Priority:** Readability over clever abstractions.
+* **Goal:** Build a product that is genuinely usable, not just a CRUD portfolio project.
 
 ---
 
-### Phase 2 — Authentication Upgrade (API Key → JWT)
+# Final Roadmap
 
-Current auth is a raw API key in the `Authorization` header. Replace with **JWT (JSON Web Tokens)** — the industry standard.
+| Phase                                      | Status      |
+| ------------------------------------------ | ----------- |
+| Phase 1 — Project Structure & Code Quality | ✅ Completed |
+| Phase 2 — JWT Authentication               | ✅ Completed |
+| Phase 3 — Pagination, Search & Filtering   | ✅ Completed |
+| Phase 4 — Bookmarks & Read Status          | ✅ Completed |
+| Phase 5 — Middleware                       | ✅ Completed |
+| Phase 6 — Configuration & Error Handling   | ⏭️ Skipped  |
+| Phase 7 — Testing                          | ⏸️ Deferred |
+| Phase 8 — Swagger Documentation            | ⏸️ Deferred |
+| **Phase 9 — Next.js Frontend**             | 🔜 Next     |
+| Phase 10 — Cloud Database & Deployment     | Pending     |
+| Phase 11 — Docker & CI/CD                  | Pending     |
 
-#### [NEW] `sql/schema/007_user_password.sql`
-Add `password_hash` column to users table.
-
-#### [NEW] `sql/queries/auth.sql`
-Queries for user registration and login lookups.
-
-#### [MODIFY] `internal/auth/auth.go`
-- Add `HashPassword()` and `CheckPasswordHash()` using `golang.org/x/crypto/bcrypt`
-- Add `GenerateJWT()` and `ValidateJWT()` using `github.com/golang-jwt/jwt/v5`
-- Keep backward-compatible API key auth as a fallback
-
-#### [NEW] `internal/handler/handler_auth.go`
-- `POST /v1/register` — register with name + email + password, returns JWT
-- `POST /v1/login` — authenticate, returns JWT + refresh token
-
-#### [MODIFY] `internal/middleware/middleware_auth.go`
-Support both `Bearer <jwt>` and `apikey <key>` in `Authorization` header.
-
-> [!IMPORTANT]
-> **Decision needed**: Should we keep API key auth for backward compatibility, or fully replace it with JWT-only auth?
+> **Why Phase 6 is skipped:** The project already contains a Config system and JSON response helpers. Graceful shutdown and operational hardening add complexity without improving learning at this stage.
 
 ---
 
-### Phase 3 — Pagination, Filtering & Search
+# Completed Backend Features
 
-Current endpoints return all results with no pagination — a red flag in any code review.
+## Authentication
 
-#### [NEW] `sql/schema/008_posts_search_index.sql`
-Add GIN index on `posts.title` and `posts.description` for PostgreSQL full-text search.
+* JWT authentication using bcrypt password hashing
+* User registration & login
+* Bearer JWT authentication
+* Legacy API-key support for protected routes
 
-#### [MODIFY] `sql/queries/posts.sql`
-- Cursor-based pagination (using `published_at` + `id` as cursor)
-- Full-text search: `WHERE to_tsvector('english', title || ' ' || COALESCE(description, '')) @@ plainto_tsquery('english', $1)`
-- Filter by feed_id, date range
+## RSS Platform
 
-#### [MODIFY] `sql/queries/feeds.sql`
-- Pagination for `GetFeeds`
-- Search by name/URL
+* Create RSS feeds
+* Follow / unfollow feeds
+* Background RSS scraper
+* Store articles in PostgreSQL
 
-#### [MODIFY] Handlers
-- Accept `?cursor=`, `?limit=`, `?search=`, `?feed_id=` query parameters
-- Return pagination metadata in response: `{ data: [...], next_cursor: "..." }`
+## Search & Pagination
+
+* Cursor-based pagination
+* PostgreSQL full-text search
+* Feed filtering
+* Search by feed name
+
+## Reading Experience
+
+* Bookmark articles
+* Mark read / unread
+* View unread-only posts
+* Paginated bookmarks
+
+## Middleware
+
+* Authentication
+* Request IDs
+* Structured logging
+* Panic recovery
+* Rate limiting
+* CORS
 
 ---
 
-### Phase 4 — Bookmarks and Read Status
+# Current Backend Architecture
 
-Add user-specific post organization and reading state without changing feed ownership or introducing unrelated product concepts.
-
-#### Objectives
-- Let authenticated users save and remove bookmarks.
-- Return a user's bookmarked posts with cursor-based pagination.
-- Let authenticated users mark posts as read or unread.
-- Allow users to request only unread posts from feeds they follow.
-
-#### [NEW] `sql/schema/009_bookmarks.sql`
-```sql
-CREATE TABLE bookmarks (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, post_id)
-);
+```text
+cmd/server
+      │
+      ▼
+Chi Router
+      │
+      ▼
+Middleware
+      │
+      ▼
+Handlers
+      │
+      ▼
+sqlc Queries
+      │
+      ▼
+PostgreSQL
 ```
 
-#### [NEW] `sql/schema/010_read_status.sql`
-```sql
-CREATE TABLE read_posts (
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-    read_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, post_id)
-);
+This architecture should **not** be refactored unless absolutely necessary.
+
+---
+
+# Phase 9 — AI-Assisted Next.js Frontend
+
+## Objective
+
+Build a beautiful, responsive frontend that consumes the existing Go API without changing backend endpoints.
+
+## Tech Stack
+
+* Next.js (App Router)
+* React
+* TypeScript
+* Tailwind CSS
+* TanStack Query
+* shadcn/ui
+
+## Folder Structure
+
+```text
+frontend/
+├── app/
+│   ├── login/
+│   ├── register/
+│   ├── feeds/
+│   ├── bookmarks/
+│   └── settings/
+├── components/
+│   ├── layout/
+│   ├── feed/
+│   ├── post/
+│   └── ui/
+├── lib/
+│   ├── api.ts
+│   ├── auth.ts
+│   └── query.ts
+└── types/
 ```
 
-#### [NEW] `sql/queries/bookmarks.sql`
-- Save a bookmark for the authenticated user and post. Repeating the request must not create a duplicate.
-- Remove a bookmark by authenticated user and post.
-- List the authenticated user's bookmarked posts with cursor-based pagination.
+## Pages
 
-#### [NEW] `sql/queries/read_status.sql`
-- Mark a post as read with an idempotent insert or update.
-- Mark a post as unread by deleting the user's read-status row.
+### Authentication
 
-#### [MODIFY] `sql/queries/posts.sql`
-- Add an optional unread-only filter scoped to the authenticated user.
-- Preserve the existing feed, search, and cursor filters.
+* Login
+* Register
+* JWT session handling
+* Auto redirect after login
 
-#### [NEW] Authenticated Handlers and Routes
-- `PUT /v1/posts/{postID}/bookmark` — save a post as a bookmark
-- `DELETE /v1/posts/{postID}/bookmark` — remove a bookmark
-- `GET /v1/bookmarks?limit=&cursor=` — get bookmarked posts one page at a time
-- `PUT /v1/posts/{postID}/read` — mark a post as read
-- `DELETE /v1/posts/{postID}/read` — mark a post as unread
-- `GET /v1/posts?unread=true&limit=&cursor=` — get unread posts one page at a time
-- Return `204 No Content` after successfully saving, removing, marking read, or marking unread.
-- Check that the post exists and is available to the authenticated user before saving a bookmark or marking it as read.
-- Apply the existing authentication middleware to every bookmark and read-status route.
+### Home Feed
+
+* Infinite scroll
+* Cursor pagination
+* Search
+* Feed filter
+* Bookmark
+* Read / unread
+
+### Feed Management
+
+* Create feed
+* Follow feed
+* Unfollow feed
+* Search feeds
+
+### Bookmarks
+
+* Paginated bookmarks
+* Remove bookmark
+* Reading progress
+
+### Settings
+
+* Profile
+* Logout
+* Session information
+
+## AI Frontend Rules
+
+* Generate **one page at a time**
+* Components should remain small and readable
+* Prefer simple React patterns
+* Do not regenerate existing files unnecessarily
+* Explain only component responsibilities and API integration
 
 ---
 
-### Phase 5 — Middleware Stack (Rate Limiting, Logging, Recovery)
+# Phase 10 — Cloud Database & Deployment
 
-This is where you demonstrate **production awareness**.
+## Objective
 
-#### [NEW] `internal/middleware/rate_limiter.go`
-Token-bucket rate limiter per API key / IP using `golang.org/x/time/rate`.
+Move application data from the local machine to the cloud.
 
-#### [NEW] `internal/middleware/logger.go`
-Structured request logging with `log/slog` (Go stdlib):
-- Method, path, status code, latency, request ID
-- JSON output format for production, text for development
+## Infrastructure
 
-#### [NEW] `internal/middleware/recovery.go`
-Panic recovery middleware that logs stack traces and returns 500.
+| Component | Platform        |
+| --------- | --------------- |
+| Frontend  | Vercel          |
+| Backend   | Railway         |
+| Database  | Neon PostgreSQL |
 
-#### [NEW] `internal/middleware/request_id.go`
-Inject `X-Request-ID` header for tracing.
+## Result
 
----
-
-### Phase 6 — Configuration & Error Handling
-
-#### [NEW] `internal/config/config.go`
-Centralized config struct parsed from env vars with validation:
-```go
-type Config struct {
-    Port            string
-    DatabaseURL     string
-    JWTSecret       string
-    ScrapeInterval  time.Duration
-    ScrapeConcurrency int
-    RateLimitRPS    float64
-    Environment     string // "development" | "production"
-}
+```text
+Next.js (Vercel)
+        │
+        ▼
+Go API (Railway)
+        │
+        ▼
+Cloud PostgreSQL (Neon)
 ```
 
-#### [MODIFY] Error responses
-Standardize all errors to:
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "human readable message",
-    "details": { ... }
-  }
-}
-```
+The MacBook stores only source code while application data lives in the cloud.
 
 ---
 
-### Phase 7 — Testing
+# Phase 11 — Docker & CI/CD
 
-Tests are **non-negotiable** for a CV project — they signal engineering discipline.
+Docker is intentionally placed **after deployment**, so it solves a real problem instead of becoming an isolated learning topic.
 
-#### [NEW] `internal/auth/auth_test.go`
-Unit tests for JWT generation/validation, password hashing.
+## Docker
 
-#### [NEW] `internal/handler/*_test.go`
-Integration tests using `httptest` for every endpoint.
+* Multi-stage Dockerfile
+* Lightweight runtime image
+* Existing Go entry point
 
-#### [NEW] `internal/middleware/*_test.go`
-Unit tests for rate limiter, auth middleware.
+## Docker Compose
 
-#### [NEW] `internal/scraper/scraper_test.go`
-Test RSS parsing with fixture XML files.
+* Go backend
+* PostgreSQL
+* Persistent volume
 
----
+## GitHub Actions
 
-### Phase 8 — API Documentation (Swagger/OpenAPI)
+Automatically run:
 
-#### [NEW] `docs/swagger.yaml`
-Full OpenAPI 3.0 spec documenting every endpoint, request/response schema, auth methods.
-
-#### [MODIFY] `cmd/server/main.go`
-Serve Swagger UI at `/docs` using `github.com/swaggo/http-swagger`.
-
----
-
-### Phase 9 — Docker & Deployment
-
-#### [NEW] `Dockerfile`
-Multi-stage build: compile in `golang:1.27-alpine`, run in `scratch`/`alpine` — tiny final image.
-
-#### [NEW] `docker-compose.yml`
-Full local dev stack: Go server + PostgreSQL + optional pgAdmin.
-
-#### [NEW] `.github/workflows/ci.yml`
-GitHub Actions CI pipeline: lint (`golangci-lint`), test, build.
-
----
-
-## Open Questions
-
-> [!IMPORTANT]
-> 1. **JWT vs API key**: Keep both auth mechanisms, or replace API key entirely?
-> 2. **Email on users**: Should we add an `email` field to users for the registration flow?
-> 3. **Deployment target**: Any preference — Railway, Fly.io, AWS, or just Docker-ready?
-> 4. **OPML import/export**: Want the ability to import/export feed lists in OPML format (common RSS standard)?
-
----
-
-## Verification Plan
-
-### Automated Tests
 ```bash
-make test          # run all unit + integration tests
-make lint          # golangci-lint
-make build         # ensure clean compile
+go test ./...
+go vet ./...
+go build ./...
 ```
-
-### Manual Verification
-- Run `docker-compose up` and test all endpoints via curl / Postman
-- Verify Swagger UI loads at `/docs`
-- Test JWT auth flow end-to-end
-- Verify rate limiter triggers on burst requests
-- Check structured logs output in JSON format
 
 ---
 
-## Summary of New Dependencies
+# Deferred Phases
 
-| Package | Purpose |
-|---------|---------|
-| `golang.org/x/crypto` | bcrypt password hashing |
-| `github.com/golang-jwt/jwt/v5` | JWT tokens |
-| `golang.org/x/time/rate` | Rate limiting |
-| `github.com/swaggo/http-swagger` | Swagger UI |
+## Phase 7 — Testing
 
-All other improvements use **Go stdlib only** (`log/slog`, `net/http/httptest`, `testing`).
+Implement later:
+
+* JWT unit tests
+* Pagination tests
+* Middleware tests
+* RSS parser tests
+* HTTP handler tests using `httptest`
+
+## Phase 8 — Swagger
+
+Implement later:
+
+* `docs/swagger.yaml`
+* Interactive Swagger UI
+* Bearer authentication documentation
+* Complete OpenAPI specification
+
+---
+
+# Final Resume Description
+
+> **RSS Aggregator Platform** — A production-grade full-stack application built with Go, PostgreSQL, sqlc, JWT authentication, cursor-based pagination, full-text search, concurrent RSS scraping, and a modern Next.js frontend featuring bookmarks, reading state, and infinite scrolling. Deployed with cloud infrastructure and documented through OpenAPI.
