@@ -56,6 +56,19 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 	return i, err
 }
 
+const deleteExpiredPosts = `-- name: DeleteExpiredPosts :execrows
+DELETE FROM posts
+WHERE published_at < NOW() - ($1::integer * INTERVAL '1 day')
+`
+
+func (q *Queries) DeleteExpiredPosts(ctx context.Context, retentionDays int32) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteExpiredPosts, retentionDays)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getPostsForUser = `-- name: GetPostsForUser :many
 SELECT posts.id, posts.created_at, posts.updated_at, posts.title, posts.description, posts.published_at, posts.url, posts.feed_id FROM posts
 JOIN feed_follows ON posts.feed_id = feed_follows.feed_id

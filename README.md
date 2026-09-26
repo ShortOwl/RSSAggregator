@@ -112,3 +112,15 @@ make migrate-down # Rollback last migration
 ## Background Scraper
 
 The server runs a background goroutine that periodically fetches RSS feeds and stores new posts. It processes feeds concurrently using a configurable number of goroutines and deduplicates posts by URL.
+
+After all workers in each scraping batch finish, posts older than 50 days
+(by `published_at`) are deleted globally using a separate cleanup query.
+Set `POST_RETENTION_DAYS` to a positive integer to override the default of `50`.
+Apply migration `011` before deploying to add the retention index. Cleanup logs
+include the number of deleted posts. If cleanup fails, saved articles remain and
+cleanup is retried after the next batch. Cleanup runs once per batch, even if
+the batch is empty or individual feeds fail. If loading the feed list fails,
+that batch skips cleanup. The existing article insertion
+and duplicate handling remain unchanged.
+Expired posts' bookmarks and read markers are also removed by existing cascading
+foreign keys. Cleanup runs only while the scraper is running and syncing feeds.

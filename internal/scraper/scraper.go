@@ -18,31 +18,48 @@ import (
 // Start begins the background RSS scraping loop.
 // It fetches up to 'concurrency' feeds at each interval and processes
 // them concurrently using goroutines.
-func Start(db *database.Queries, concurrency int, interval time.Duration) {
+func Start(db *database.Queries, concurrency int, interval time.Duration, retentionDays int32) {
 	log.Printf("Scraping on %v goroutines every %s duration", concurrency, interval)
 
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
 	// The for loop with <-ticker.C blocks until the next tick.
 	// The first iteration runs immediately (before the first tick).
 	for ; ; <-ticker.C {
-		feeds, err := db.GetNextFeedsToFetch(context.Background(), int32(concurrency))
-		if err != nil {
-			log.Println("error fetching feeds:", err)
-			continue
-		}
-
-		wg := &sync.WaitGroup{}
-		for _, feed := range feeds {
-			wg.Add(1)
-			go scrapeFeed(db, wg, feed)
-		}
-		wg.Wait()
+		scrapeBatch(db, concurrency, retentionDays)
 	}
 }
 
-func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
-	defer wg.Done()
+// scrapeBatch processes one batch, then cleans up once after all workers finish.
+func scrapeBatch(db *database.Queries, concurrency int, retentionDays int32) {
+	feeds, err := db.GetNextFeedsToFetch(context.Background(), int32(concurrency))
+	if err != nil {
+		log.Println("error fetching feeds:", err)
+		return
+	}
+
+	wg := &sync.WaitGroup{}
+	for _, feed := range feeds {
+		wg.Add(1)
+
+		go func(feed database.Feed) {
+			defer wg.Done()
+			ScrapeFeed(db, feed)
+		}(feed)
+	}
+	wg.Wait()
+
+	// Delete the expired posts.
+	deletedPosts, err := db.DeleteExpiredPosts(context.Background(), retentionDays)
+	if err != nil {
+		log.Println("Failed to delete expired posts:", err)
+		return
+	}
+	log.Printf("Retention cleanup deleted %d posts (retention: %d days)", deletedPosts, retentionDays)
+}
+
+func ScrapeFeed(db *database.Queries, feed database.Feed) {
 
 	_, err := db.MarkFeedAsFetched(context.Background(), feed.ID)
 	if err != nil {

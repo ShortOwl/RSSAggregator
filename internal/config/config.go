@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -16,6 +18,7 @@ type Config struct {
 	JWTSecret         string
 	ScrapeInterval    time.Duration
 	ScrapeConcurrency int
+	PostRetentionDays int32
 }
 
 // Load reads configuration from environment variables (and .env file).
@@ -43,11 +46,28 @@ func Load() Config {
 		log.Fatal("JWT_SECRET must be at least 32 characters")
 	}
 
+	retentionDays, err := parseRetentionDays(os.Getenv("POST_RETENTION_DAYS"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return Config{
 		Port:              port,
 		DatabaseURL:       dbURL,
 		JWTSecret:         jwtSecret,
 		ScrapeInterval:    10 * time.Minute,
 		ScrapeConcurrency: 10,
+		PostRetentionDays: retentionDays,
 	}
+}
+
+func parseRetentionDays(value string) (int32, error) {
+	if value == "" {
+		return 50, nil // Limit how long articles occupy database storage by default.
+	}
+	days, err := strconv.ParseInt(value, 10, 32)
+	if err != nil || days <= 0 {
+		return 0, fmt.Errorf("POST_RETENTION_DAYS must be a positive 32-bit integer")
+	}
+	return int32(days), nil
 }

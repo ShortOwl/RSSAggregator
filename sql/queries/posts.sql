@@ -4,6 +4,10 @@ INSERT INTO posts(id, created_at, updated_at, title, description, published_at, 
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 RETURNING *;
 
+-- name: DeleteExpiredPosts :execrows
+DELETE FROM posts
+WHERE published_at < NOW() - (sqlc.arg('retention_days')::integer * INTERVAL '1 day');
+
 -- name: GetPostsForUser :many
 SELECT posts.* FROM posts
 JOIN feed_follows ON posts.feed_id = feed_follows.feed_id

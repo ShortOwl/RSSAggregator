@@ -43,7 +43,7 @@ func main() {
 	h := handler.New(db, cfg.JWTSecret)
 
 	// 4. Start background scraper
-	go scraper.Start(db, cfg.ScrapeConcurrency, cfg.ScrapeInterval)
+	go scraper.Start(db, cfg.ScrapeConcurrency, cfg.ScrapeInterval, cfg.PostRetentionDays)
 
 	// 5. Set up router
 	router := chi.NewRouter()

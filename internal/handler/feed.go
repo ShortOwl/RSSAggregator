@@ -10,6 +10,7 @@ import (
 	"github.com/ShortOwl/RSSAggregator/internal/database"
 	"github.com/ShortOwl/RSSAggregator/internal/model"
 	"github.com/ShortOwl/RSSAggregator/internal/response"
+	"github.com/ShortOwl/RSSAggregator/internal/scraper"
 	"github.com/google/uuid"
 )
 
@@ -41,7 +42,8 @@ func (h *Handler) HandleCreateFeed(w http.ResponseWriter, r *http.Request, user 
 		response.WithError(w, 500, "Couldn't create feed")
 		return
 	}
-
+	// Pela feed add kro to fetch, natu krtu have krse tarat aj.
+	go scraper.ScrapeFeed(h.DB, feed)
 	response.WithJSON(w, 201, model.DatabaseFeedToFeed(feed))
 }
 
