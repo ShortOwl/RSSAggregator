@@ -6,7 +6,12 @@ RETURNING *;
 
 -- name: DeleteExpiredPosts :execrows
 DELETE FROM posts
-WHERE published_at < NOW() - (sqlc.arg('retention_days')::integer * INTERVAL '1 day');
+WHERE published_at < NOW() - (sqlc.arg('retention_days')::integer * INTERVAL '1 day')
+-- Posts are shared: any user's bookmark protects the article from retention.
+AND NOT EXISTS (
+    SELECT 1 FROM bookmarks
+    WHERE bookmarks.post_id = posts.id
+);
 
 -- name: GetPostsForUser :many
 SELECT posts.* FROM posts

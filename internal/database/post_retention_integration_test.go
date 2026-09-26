@@ -55,6 +55,9 @@ func TestPostRetentionPostgres(t *testing.T) {
 	oldID := uuid.New()
 	exec("INSERT INTO posts (id, created_at, updated_at, title, published_at, url, feed_id) VALUES ($1, NOW(), NOW(), 'Old', NOW() - INTERVAL '91 days', 'https://example.com/old', $2)", oldID, feedID)
 	exec("INSERT INTO bookmarks (user_id, post_id) VALUES ($1, $2)", userID, oldID)
+	otherUserID := uuid.New()
+	exec("INSERT INTO users (id, created_at, updated_at, name, email, password_hash) VALUES ($1, NOW(), NOW(), 'Other reader', 'other@example.com', 'test')", otherUserID)
+	exec("INSERT INTO bookmarks (user_id, post_id) VALUES ($1, $2)", otherUserID, oldID)
 	exec("INSERT INTO read_posts (user_id, post_id) VALUES ($1, $2)", userID, oldID)
 	newPost := func(url string, days int) CreatePostParams {
 		now := time.Now().UTC()
@@ -69,7 +72,7 @@ func TestPostRetentionPostgres(t *testing.T) {
 		}
 	}
 	deleted, err := db.DeleteExpiredPosts(ctx, 90)
-	if err != nil || deleted != 2 {
+	if err != nil || deleted != 1 {
 		t.Fatalf("sync: deleted=%d err=%v", deleted, err)
 	}
 	count := func(table string, want int) {
@@ -82,9 +85,11 @@ func TestPostRetentionPostgres(t *testing.T) {
 			t.Fatalf("%s count=%d want=%d", table, got, want)
 		}
 	}
-	count("posts", 2)
-	count("bookmarks", 0)
-	count("read_posts", 0)
+	count("posts", 3)
+	count("bookmarks", 2)
+	count("read_posts", 1)
+	// Removing one user's bookmark must not discard another user's saved post.
+	exec("DELETE FROM bookmarks WHERE user_id = $1 AND post_id = $2", userID, oldID)
 	// A duplicate does not prevent subsequent inserts or cleanup.
 	if _, err := db.CreatePost(ctx, recent); err == nil {
 		t.Fatal("expected duplicate insert to fail")
@@ -96,11 +101,21 @@ func TestPostRetentionPostgres(t *testing.T) {
 	if err != nil || deleted != 1 {
 		t.Fatalf("duplicate/custom retention: deleted=%d err=%v", deleted, err)
 	}
-	count("posts", 2)
+	count("posts", 3)
+	count("bookmarks", 1)
 	deleted, err = db.DeleteExpiredPosts(ctx, 30)
 	if err != nil || deleted != 0 {
 		t.Fatalf("repeated cleanup: deleted=%d err=%v", deleted, err)
 	}
+	// Once the last bookmark is removed, retention can delete the expired post.
+	exec("DELETE FROM bookmarks WHERE user_id = $1 AND post_id = $2", otherUserID, oldID)
+	deleted, err = db.DeleteExpiredPosts(ctx, 30)
+	if err != nil || deleted != 1 {
+		t.Fatalf("last bookmark removed: deleted=%d err=%v", deleted, err)
+	}
+	count("posts", 2)
+	count("bookmarks", 0)
+	count("read_posts", 0)
 	// A deletion failure must leave successfully inserted articles intact.
 	exec("INSERT INTO posts (id, created_at, updated_at, title, published_at, url, feed_id) VALUES ($1, NOW(), NOW(), 'Old', NOW() - INTERVAL '91 days', 'https://example.com/old', $2)", oldID, feedID)
 	exec("CREATE FUNCTION reject_delete() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'test cleanup failure'; END $$")

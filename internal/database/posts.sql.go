@@ -59,8 +59,13 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (Post, e
 const deleteExpiredPosts = `-- name: DeleteExpiredPosts :execrows
 DELETE FROM posts
 WHERE published_at < NOW() - ($1::integer * INTERVAL '1 day')
+AND NOT EXISTS (
+    SELECT 1 FROM bookmarks
+    WHERE bookmarks.post_id = posts.id
+)
 `
 
+// Posts are shared: any user's bookmark protects the article from retention.
 func (q *Queries) DeleteExpiredPosts(ctx context.Context, retentionDays int32) (int64, error) {
 	result, err := q.db.ExecContext(ctx, deleteExpiredPosts, retentionDays)
 	if err != nil {
