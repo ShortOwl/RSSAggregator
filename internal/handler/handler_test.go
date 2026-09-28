@@ -13,7 +13,7 @@ import (
 )
 
 func TestPublicHealthHandlers(t *testing.T) {
-	h := New(nil, "test-secret")
+	h := New(nil, "test-secret", "", "")
 	for _, tt := range []struct {
 		name    string
 		handler http.HandlerFunc
@@ -39,7 +39,7 @@ func TestPublicHealthHandlers(t *testing.T) {
 func TestHandleGetUser(t *testing.T) {
 	user := database.User{ID: uuid.New(), Name: "Reader", Email: "reader@example.com", ApiKey: "test-key", PasswordHash: "secret-password-hash"}
 	w := httptest.NewRecorder()
-	New(nil, "test-secret").HandleGetUser(w, httptest.NewRequest("GET", "/users", nil), user)
+	New(nil, "test-secret", "", "").HandleGetUser(w, httptest.NewRequest("GET", "/users", nil), user)
 	var body map[string]interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
@@ -50,6 +50,9 @@ func TestHandleGetUser(t *testing.T) {
 	if _, exists := body["password_hash"]; exists {
 		t.Error("response exposes password_hash")
 	}
+	if _, exists := body["api_key"]; exists {
+		t.Error("response exposes api_key")
+	}
 	if strings.Contains(w.Body.String(), user.PasswordHash) {
 		t.Error("response exposes password hash value")
 	}
@@ -57,7 +60,7 @@ func TestHandleGetUser(t *testing.T) {
 
 func TestHandlersRejectInvalidInput(t *testing.T) {
 	// No database is needed: each input must fail before its first query.
-	h := New(nil, "test-secret")
+	h := New(nil, "test-secret", "", "")
 	user := database.User{ID: uuid.New()}
 	router := chi.NewRouter()
 	router.Post("/register", h.HandleRegister)

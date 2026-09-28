@@ -74,14 +74,14 @@ export function PostList({ mode }: { mode: "posts" | "bookmarks" }) {
             />
           )}
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-medium uppercase tracking-[0.1em] text-black/50">
+            <p className="text-xs font-medium uppercase tracking-[0.1em] text-ink-50">
               {saved
                 ? "Saved for another moment"
                 : filters.search
                   ? "Search results"
                   : "The latest"}
             </p>
-            <span className="text-xs text-black/40">Newest first</span>
+            <span className="text-xs text-ink-40">Newest first</span>
           </div>
           {query.isPending ? (
             <div
@@ -92,7 +92,7 @@ export function PostList({ mode }: { mode: "posts" | "bookmarks" }) {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-black/[0.08] bg-white p-6"
+                  className="rounded-xl border border-foreground/[0.08] bg-surface p-6"
                 >
                   <Skeleton className="mb-4 h-3 w-32" />
                   <Skeleton className="mb-3 h-6 w-3/4" />
@@ -158,7 +158,7 @@ export function PostList({ mode }: { mode: "posts" | "bookmarks" }) {
             </>
           )}
           {(state.bookmarks.isError || state.unread.isError) && (
-            <p role="status" className="mt-3 text-xs text-graphite">
+            <p role="status" className="mt-3 text-xs text-muted">
               Some reading indicators are unavailable. You can still use each
               story’s action menu.{" "}
               <button

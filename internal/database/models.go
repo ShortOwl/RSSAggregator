@@ -35,6 +35,13 @@ type FeedFollow struct {
 	FeedID    uuid.UUID
 }
 
+type PasswordReset struct {
+	UserID    uuid.UUID
+	OtpHash   string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+}
+
 type Post struct {
 	ID          uuid.UUID
 	CreatedAt   time.Time

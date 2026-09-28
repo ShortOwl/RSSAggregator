@@ -21,7 +21,7 @@ internal/
   ├── config/        → Centralized environment configuration
   ├── database/      → Auto-generated database layer (sqlc)
   ├── handler/       → HTTP request handlers (users, feeds, posts)
-  ├── middleware/    → JWT and API-key authentication middleware
+  ├── middleware/    → JWT authentication and rate limiting middleware
   ├── model/         → API response models and DB-to-API converters
   ├── response/      → JSON response helpers
   └── scraper/       → Background RSS feed scraping engine
@@ -38,12 +38,15 @@ sql/
 | `GET` | `/v1/healthz` | Health check |
 | `POST` | `/v1/register` | Register with name, email, and password |
 | `POST` | `/v1/login` | Log in with email and password |
+| `POST` | `/v1/forgot-password` | Email a six-digit recovery code, if the account exists |
+| `POST` | `/v1/reset-password` | Set a new password with the email and recovery code |
 | `GET` | `/v1/feeds` | List all feeds |
 
 ### Authenticated
 
-Protected endpoints accept either `Authorization: Bearer <jwt>` or
-`Authorization: ApiKey <key>`.
+Protected endpoints require `Authorization: Bearer <jwt>`. Legacy API-key
+authentication is deprecated and no longer accepted. Existing database keys
+remain stored for migration compatibility but are not returned by the API.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -82,12 +85,17 @@ Use `GET /v1/posts?unread=true` to return only unread posts.
    PORT=8080
    DB_URL=postgres://username:password@localhost:5432/rssagg?sslmode=disable
    JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
+   SMTP_EMAIL=your-gmail-address@gmail.com
+   SMTP_PASSWORD=your-google-app-password
    ```
+
+   Password recovery sends codes through Gmail SMTP. Use a [Google App Password](https://support.google.com/accounts/answer/2461835) for `SMTP_PASSWORD`; the server requires both SMTP variables at startup. Keep `.env` out of version control.
 
 3. **Run database migrations**
 
    Migration 007 makes email and password hashes mandatory. Remove any
    passwordless tutorial users before applying it.
+   Migration 012 creates the password-recovery OTP table.
 
    ```bash
    make migrate-up

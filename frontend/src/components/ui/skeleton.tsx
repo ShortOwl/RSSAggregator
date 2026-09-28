@@ -3,7 +3,7 @@ export function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="skeleton"
-      className={cn("animate-pulse rounded-sm bg-black/5", className)}
+      className={cn("animate-pulse rounded-sm bg-foreground/5", className)}
       {...props}
     />
   );

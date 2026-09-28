@@ -11,7 +11,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   if (!ready || !authenticated)
     return (
       <div
-        className="flex min-h-screen items-center justify-center text-sm text-graphite"
+        className="flex min-h-screen items-center justify-center text-sm text-muted"
         role="status"
       >
         Opening your reading space…

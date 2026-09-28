@@ -42,12 +42,12 @@ export function FeedManager() {
       >
         <AddFeedDialog />
       </PageHeader>
-      <div className="mb-8 rounded-xl bg-sky-tint p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
+      <div className="mb-8 rounded-xl bg-sky-tint p-6 accent-surface sm:flex sm:items-center sm:justify-between sm:gap-6">
         <div>
           <h2 className="text-[22px] font-semibold tracking-tight">
             A feed that feels like you.
           </h2>
-          <p className="mt-2 text-sm text-graphite">
+          <p className="mt-2 text-sm text-muted">
             Follow a source below, or add one you already love.
           </p>
         </div>
@@ -73,7 +73,7 @@ export function FeedManager() {
           </Button>
         </div>
         <div className="relative sm:w-80">
-          <Search size={16} className="absolute left-3 top-3.5 text-black/40" />
+          <Search size={16} className="absolute left-3 top-3.5 text-ink-40" />
           <Input
             aria-label="Search feeds"
             placeholder="Search by feed name or URL"

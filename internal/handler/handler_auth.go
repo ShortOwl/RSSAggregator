@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -135,6 +137,9 @@ func validateRegistrationInput(name, email, password string) error {
 		return errors.New("A valid email is required")
 	}
 
+	return validatePassword(password)
+}
+func validatePassword(password string) error {
 	if len(password) < 8 {
 		return errors.New("Password must be at least 8 bytes")
 	}
@@ -142,4 +147,105 @@ func validateRegistrationInput(name, email, password string) error {
 		return errors.New("Password must be at most 72 bytes")
 	}
 	return nil
+}
+
+func (h *Handler) HandleForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Email string `json:"email"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		response.WithError(w, http.StatusBadRequest, "Couldn't decode request body")
+		return
+	}
+
+	email := strings.ToLower(strings.TrimSpace(params.Email))
+
+	user, err := h.DB.GetUserByEmail(r.Context(), email)
+	if err == nil {
+		otp, err := auth.GenerateOTP()
+		if err == nil {
+			now := time.Now().UTC()
+			err = h.DB.SavePasswordReset(r.Context(), database.SavePasswordResetParams{
+				UserID:    user.ID,
+				OtpHash:   auth.HashOTP(otp),
+				CreatedAt: now,
+				ExpiresAt: now.Add(10 * time.Minute),
+			})
+			if err == nil {
+				err = h.sendPasswordResetEmail(email, otp)
+			}
+		}
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		slog.Error("password recovery request failed", "error", err)
+	}
+	response.WithJSON(w, http.StatusOK, map[string]string{
+		"message": "If that email is registered, a recovery code will be sent.",
+	})
+
+}
+
+func (h *Handler) HandleResetPassword(w http.ResponseWriter, r *http.Request) {
+	var params struct {
+		Email    string `json:"email"`
+		OTP      string `json:"otp"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		response.WithError(w, http.StatusBadRequest, "Couldn't decode request body")
+		return
+	}
+	// validation steps.
+	if err := validatePassword(params.Password); err != nil {
+		response.WithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if len(params.OTP) != 6 || strings.Trim(params.OTP, "0123456789") != "" {
+		response.WithError(w, http.StatusBadRequest, "Invalid or expired code")
+		return
+	}
+
+	email := strings.ToLower(strings.TrimSpace(params.Email))
+	user, err := h.DB.GetUserByEmail(r.Context(), email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			slog.Error("password reset lookup failed", "error", err)
+		}
+		response.WithError(w, http.StatusBadRequest, "Invalid or expired code")
+		return
+	}
+
+	// user avi jai to verify otp , it successfull update password.
+	reset, err := h.DB.GetPasswordResetByUser(r.Context(), user.ID)
+	now := time.Now().UTC()
+	otpHash := auth.HashOTP(params.OTP)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		slog.Error("password reset record lookup failed", "error", err)
+	}
+	if err != nil || !now.Before(reset.ExpiresAt) ||
+		subtle.ConstantTimeCompare([]byte(otpHash), []byte(reset.OtpHash)) != 1 {
+		response.WithError(w, http.StatusBadRequest, "Invalid or expired code")
+		return
+	}
+	passwordHash, err := auth.HashPassword(params.Password)
+	if err != nil {
+		response.WithError(w, http.StatusInternalServerError, "Couldn't secure the password")
+		return
+	}
+	rows, err := h.DB.CompletePasswordReset(r.Context(), database.CompletePasswordResetParams{
+		UserID: user.ID, OtpHash: otpHash, ExpiresAt: now,
+		PasswordHash: passwordHash, UpdatedAt: now,
+	})
+	if err != nil {
+		slog.Error("password reset failed", "error", err)
+		response.WithError(w, http.StatusInternalServerError, "Couldn't reset password")
+		return
+	}
+	if rows != 1 {
+		response.WithError(w, http.StatusBadRequest, "Invalid or expired code")
+		return
+	}
+	response.WithJSON(w, http.StatusOK, map[string]string{"message": "Password reset. Please sign in."})
 }

@@ -25,6 +25,8 @@ func TestLoadRetentionDays(t *testing.T) {
 	t.Setenv("PORT", "8080")
 	t.Setenv("DB_URL", "postgres://unused")
 	t.Setenv("JWT_SECRET", "test-secret-at-least-32-characters-long")
+	t.Setenv("SMTP_EMAIL", "test@example.com")
+	t.Setenv("SMTP_PASSWORD", "test-app-password")
 	t.Setenv("POST_RETENTION_DAYS", "30")
 	if got := Load().PostRetentionDays; got != 30 {
 		t.Fatalf("PostRetentionDays = %d, want 30 from POST_RETENTION_DAYS", got)

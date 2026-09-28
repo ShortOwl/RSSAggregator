@@ -24,10 +24,10 @@ func TestRateLimiter(t *testing.T) {
 		{"same IP different port", "192.0.2.1:2000", "", 204},
 		{"IP exhausted", "192.0.2.1:3000", "", 429},
 		{"different IP", "192.0.2.2:1000", "", 204},
-		{"first API key request", "192.0.2.1:1000", "ApiKey first", 204},
-		{"same key different IP", "192.0.2.2:1000", "apikey first", 204},
-		{"key exhausted", "192.0.2.3:1000", "ApiKey first", 429},
-		{"different key", "192.0.2.1:1000", "ApiKey second", 204},
+		{"header cannot reset IP bucket", "192.0.2.1:1000", "ApiKey first", 429},
+		{"same header different IP", "192.0.2.2:1000", "apikey first", 204},
+		{"new IP", "192.0.2.3:1000", "ApiKey first", 204},
+		{"different header cannot reset bucket", "192.0.2.1:1000", "ApiKey second", 429},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest("GET", "/", nil)
@@ -76,5 +76,26 @@ func TestRateLimiterRemovesInactiveClients(t *testing.T) {
 	}
 	if limiter.allow("active") {
 		t.Error("active client's exhausted bucket was reset")
+	}
+}
+
+func TestRecoveryRateLimitCannotBeBypassedWithApiKeyHeader(t *testing.T) {
+	limiter := NewRateLimiter(0, 1)
+	handler := limiter.Limit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	for i, key := range []string{"ApiKey first", "ApiKey second"} {
+		r := httptest.NewRequest("POST", "/v1/reset-password", nil)
+		r.RemoteAddr = "192.0.2.1:1000"
+		r.Header.Set("Authorization", key)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		want := http.StatusNoContent
+		if i == 1 {
+			want = http.StatusTooManyRequests
+		}
+		if w.Code != want {
+			t.Fatalf("request %d: status=%d, want %d", i+1, w.Code, want)
+		}
 	}
 }

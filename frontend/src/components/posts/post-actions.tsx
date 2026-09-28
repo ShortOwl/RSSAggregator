@@ -47,7 +47,7 @@ export function PostActions({
           disabled={action.isPending}
           onClick={() => action.mutate({ kind: "read", active: !read })}
         >
-          <Check className={read ? "text-notion-blue" : "text-black/40"} />
+          <Check className={read ? "text-notion-blue" : "text-ink-40"} />
         </Button>
       ) : null}
       <DropdownMenu>

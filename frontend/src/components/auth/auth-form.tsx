@@ -55,13 +55,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   }
   return (
     <Card className="mx-auto w-full max-w-md p-8">
-      <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-black/40">
+      <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-ink-40">
         Your reading space
       </p>
       <h2 className="text-[22px] font-semibold tracking-[-0.242px]">
         {register ? "A fresh page starts here." : "Welcome back."}
       </h2>
-      <p className="mt-2 text-sm text-graphite">
+      <p className="mt-2 text-sm text-muted">
         {register
           ? "Create an account and follow your curiosity."
           : "Good stories are waiting for you."}
@@ -107,21 +107,31 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               type="button"
               onClick={() => setVisible(!visible)}
               aria-label={visible ? "Hide password" : "Show password"}
-              className="absolute right-1 top-1 rounded-lg p-2 text-black/50"
+              className="absolute right-1 top-1 rounded-lg p-2 text-ink-50"
             >
               {visible ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
           {register && (
-            <p id="password-hint" className="text-xs text-black/50">
+            <p id="password-hint" className="text-xs text-ink-50">
               At least 8 characters for a fresh start.
             </p>
           )}
         </div>
+        {!register && (
+          <p className="text-right text-sm">
+            <Link
+              className="font-medium text-notion-blue hover:underline"
+              href="/forgot-password"
+            >
+              Forgot password?
+            </Link>
+          </p>
+        )}
         {(validation || mutation.error) && (
           <p
             role="alert"
-            className="rounded-lg bg-paper-warmth p-3 text-sm text-vermillion"
+            className="rounded-lg bg-canvas p-3 text-sm text-vermillion"
           >
             {validation || mutation.error?.message}
           </p>
@@ -139,7 +149,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           <ArrowRight size={16} />
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-graphite">
+      <p className="mt-6 text-center text-sm text-muted">
         {register ? "Already have an account? " : "New to Margin? "}
         <Link
           className="font-medium text-notion-blue hover:underline"

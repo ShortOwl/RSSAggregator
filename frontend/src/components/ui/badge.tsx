@@ -4,7 +4,7 @@ export function Badge({ className, ...props }: React.ComponentProps<"span">) {
     <span
       data-slot="badge"
       className={cn(
-        "inline-flex rounded-full bg-sky-tint px-3 py-1 text-xs font-medium",
+        "inline-flex rounded-full bg-sky-tint text-black px-3 py-1 text-xs font-medium",
         className,
       )}
       {...props}

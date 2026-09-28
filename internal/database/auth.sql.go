@@ -51,8 +51,8 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const registerUser = `-- name: RegisterUser :one
-INSERT INTO users (id, created_at, updated_at, name, email, password_hash, api_key)
-VALUES ($1, $2, $3, $4, $5, $6, encode(sha256(random()::text::bytea), 'hex'))
+INSERT INTO users (id, created_at, updated_at, name, email, password_hash)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, created_at, updated_at, name, api_key, email, password_hash
 `
 

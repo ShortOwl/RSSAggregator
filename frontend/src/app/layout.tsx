@@ -6,6 +6,7 @@ import "@fontsource/inter/700.css";
 import "@fontsource/source-serif-pro/400.css";
 import "./globals.css";
 import { Providers } from "./providers";
+import { themeScript } from "@/lib/theme";
 export const metadata: Metadata = {
   title: {
     default: "Margin — Your daily reading space",
@@ -20,7 +21,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <Providers>{children}</Providers>
       </body>

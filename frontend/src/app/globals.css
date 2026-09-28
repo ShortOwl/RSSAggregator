@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @theme {
   --color-notion-blue: #0075de;
   --color-paper-warmth: #f6f5f4;
@@ -23,8 +24,31 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
 }
+/* Semantic neutrals preserve the reference palette in light mode. */
+@theme inline {
+  --color-canvas: var(--surface-canvas);
+  --color-surface: var(--surface-card);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-ink-30: var(--text-ink-30);
+  --color-ink-40: var(--text-ink-40);
+  --color-ink-50: var(--text-ink-50);
+  --color-ink-55: var(--text-ink-55);
+  --color-ink-70: var(--text-ink-70);
+  --color-ink-95: var(--text-ink-95);
+}
 :root {
   color-scheme: light;
+  --surface-canvas: #f6f5f4;
+  --surface-card: #ffffff;
+  --text-primary: #000000;
+  --text-muted: #615d59;
+  --text-ink-30: rgba(0, 0, 0, 0.3);
+  --text-ink-40: rgba(0, 0, 0, 0.4);
+  --text-ink-50: rgba(0, 0, 0, 0.5);
+  --text-ink-55: rgba(0, 0, 0, 0.55);
+  --text-ink-70: rgba(0, 0, 0, 0.7);
+  --text-ink-95: rgba(0, 0, 0, 0.95);
   --page-max-width: 1440px;
   --section-gap: 80px;
   --card-padding: 24px;
@@ -40,9 +64,28 @@
   --text-display: 72px;
   --text-display-lg: 96px;
 }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-canvas: #191817;
+  --surface-card: #242321;
+  --text-primary: #f6f5f4;
+  --text-muted: #b8b4af;
+  --text-ink-30: #b8b4af;
+  --text-ink-40: #b8b4af;
+  --text-ink-50: #b8b4af;
+  --text-ink-55: #b8b4af;
+  --text-ink-70: #d4d0cb;
+  --text-ink-95: #f6f5f4;
+}
+/* Colored panels retain their original foregrounds in both themes. */
+.accent-surface {
+  color: #000000;
+  --text-primary: #000000;
+  --text-muted: #615d59;
+}
 body {
-  background: #f6f5f4;
-  color: #000;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;

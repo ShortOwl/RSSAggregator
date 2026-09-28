@@ -14,7 +14,6 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
-	APIKey    string    `json:"api_key"`
 }
 
 // DatabaseUserToUser converts a database user to an API response user.
@@ -25,7 +24,6 @@ func DatabaseUserToUser(dbUser database.User) User {
 		UpdatedAt: dbUser.UpdatedAt,
 		Name:      dbUser.Name,
 		Email:     dbUser.Email,
-		APIKey:    dbUser.ApiKey,
 	}
 } // Notice that PasswordHash is not included. Database models may contain it, but API responses must never expose it.
 

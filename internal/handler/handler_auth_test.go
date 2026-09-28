@@ -48,7 +48,7 @@ func TestHandleLogin(t *testing.T) {
 			// The query expectation also verifies email trimming and lowercasing.
 			body := `{"email":"  READER@example.com  ","password":"` + tt.password + `"}`
 			w := httptest.NewRecorder()
-			New(database.New(db), "test-secret").HandleLogin(w, httptest.NewRequest("POST", "/login", strings.NewReader(body)))
+			New(database.New(db), "test-secret", "", "").HandleLogin(w, httptest.NewRequest("POST", "/login", strings.NewReader(body)))
 			if w.Code != tt.want {
 				t.Fatalf("status=%d, want %d; %s", w.Code, tt.want, w.Body.String())
 			}

@@ -40,7 +40,7 @@ func main() {
 
 	// 3. Create dependencies
 	db := database.New(conn) // anathi hu badhi sql queries run kravi sakis.
-	h := handler.New(db, cfg.JWTSecret)
+	h := handler.New(db, cfg.JWTSecret, cfg.SMTPEmail, cfg.SMTPPassword)
 
 	// 4. Start background scraper
 	go scraper.Start(db, cfg.ScrapeConcurrency, cfg.ScrapeInterval, cfg.PostRetentionDays)
@@ -86,6 +86,8 @@ func main() {
 	v1.Get("/err", h.HandleError)
 	v1.Post("/register", h.HandleRegister)
 	v1.Post("/login", h.HandleLogin)
+	v1.Post("/forgot-password", h.HandleForgotPassword)
+	v1.Post("/reset-password", h.HandleResetPassword)
 	v1.Get("/feeds", h.HandleGetFeeds)
 
 	// Authenticated routes

@@ -17,8 +17,8 @@ Set `NEXT_PUBLIC_API_URL` to the Go API including `/v1` (default `http://localho
 
 ## Components
 
-- `app/`: six routes, shared layouts, and query providers.
-- `components/auth/`: login and registration, session restoration, expiry, and protected navigation.
+- `app/`: reader and authentication routes, shared layouts, and query providers.
+- `components/auth/`: login, registration, password recovery, session restoration, expiry, and protected navigation.
 - `components/posts/`: safe text excerpts, feed/search/unread filters, paginated lists, and reading actions.
 - `components/feeds/`: directory, subscriptions, and add-then-follow recovery.
 - `components/settings/`: read-only account details and browser-local compact reading preference.
@@ -30,13 +30,15 @@ Set `NEXT_PUBLIC_API_URL` to the Go API including `/v1` (default `http://localho
 
 Login and registration use `/login` and `/register`. The issued JWT is stored in browser local storage and sent as a Bearer token directly to the Go API. Sessions end at the existing 24-hour expiry or on a protected 401 response; there is no refresh endpoint. Signing out clears credentials and the query cache, including across tabs. This browser-persisted token is accessible to JavaScript; an HttpOnly-cookie deployment would require a separate server transport design.
 
+Password recovery uses public `/forgot-password` and `/reset-password` requests. The first step always shows the same confirmation, whether or not the email is registered. The second step submits the six-digit code and a new password. The Go server must have Gmail SMTP configured and migration 012 applied.
+
 Posts use `/posts` with `search`, `feed_id`, `unread`, `limit`, and the server's opaque `cursor`. Bookmarks use `/bookmarks` with pagination only. An empty `next_cursor` ends the list. Infinite scrolling includes a manual load/retry button. Search is debounced. Failed requests honor rate-limit delays through TanStack Query retries.
 
 Read and bookmark mutations use PUT/DELETE `/posts/{id}/read` and `/posts/{id}/bookmark`. Because responses omit status flags, membership is reconciled through all bookmark and unread pages. Until reconciliation finishes, explicit actions are available without assuming state. Unread reconciliation only establishes status for followed feeds. Large collections require additional requests; pages are requested sequentially. Status lookups can be retried without disabling the reading list.
 
 Feed names are resolved from the cursor-paginated `/feeds` directory. `/feed_follows` provides subscription IDs; unfollow uses that ID rather than the feed ID. Creation and following are separate operations. If following fails, retry uses the already-created feed. The scraper may take about ten minutes to populate a new feed.
 
-Profile uses `GET /users`; account edits and password reset are omitted because the API does not provide them. The returned API key is not displayed. Article links allow only HTTP(S); descriptions render as text, never injected HTML.
+Profile uses `GET /users`; account edits are not provided by the API. Article links allow only HTTP(S); descriptions render as text, never injected HTML.
 
 ## Verification
 

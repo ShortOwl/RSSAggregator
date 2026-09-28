@@ -4,7 +4,6 @@ export interface User {
   email: string;
   created_at: string;
   updated_at: string;
-  api_key: string;
 }
 export interface Feed {
   id: string;

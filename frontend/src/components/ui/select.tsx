@@ -6,7 +6,7 @@ export function Select({
   return (
     <select
       className={cn(
-        "min-h-11 rounded-lg border border-black/15 bg-white px-3 py-2 text-sm focus-visible:outline-notion-blue",
+        "min-h-11 rounded-lg border border-foreground/15 bg-surface px-3 py-2 text-sm focus-visible:outline-notion-blue",
         className,
       )}
       {...props}

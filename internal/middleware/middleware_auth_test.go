@@ -28,6 +28,7 @@ func TestWithAuthRejectsCredentials(t *testing.T) {
 		{"missing", "", "Authentication credentials are required"},
 		{"missing token", "Bearer", "Authentication credentials are required"},
 		{"missing API key", "ApiKey", "Authentication credentials are required"},
+		{"deprecated API key", "ApiKey test-key", "Unsupported authentication scheme"},
 		{"extra fields", "Bearer one two", "Authentication credentials are required"},
 		{"unsupported", "Basic abc", "Unsupported authentication scheme"},
 		{"malformed JWT", "Bearer bad", "token is expired or invalid"},
@@ -62,15 +63,13 @@ func TestWithAuthUserLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tt := range []struct {
-		name, header, query string
-		lookupErr           error
-		want                int
+		name, header string
+		lookupErr    error
+		want         int
 	}{
-		{"Bearer success", "bEaReR " + token, "GetUserByID", nil, 204},
-		{"API key success", "aPiKeY test-key", "GetUserByAPIKey", nil, 204},
-		{"user missing", "Bearer " + token, "GetUserByID", sql.ErrNoRows, 401},
-		{"invalid API key", "ApiKey test-key", "GetUserByAPIKey", sql.ErrNoRows, 401},
-		{"database failure", "Bearer " + token, "GetUserByID", errors.New("database unavailable"), 500},
+		{"Bearer success", "bEaReR " + token, nil, 204},
+		{"user missing", "Bearer " + token, sql.ErrNoRows, 401},
+		{"database failure", "Bearer " + token, errors.New("database unavailable"), 500},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
@@ -78,12 +77,7 @@ func TestWithAuthUserLookup(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer db.Close()
-			query := mock.ExpectQuery(tt.query)
-			if tt.query == "GetUserByID" {
-				query.WithArgs(id)
-			} else {
-				query.WithArgs("test-key")
-			}
+			query := mock.ExpectQuery("GetUserByID").WithArgs(id)
 			if tt.lookupErr != nil {
 				query.WillReturnError(tt.lookupErr)
 			} else {

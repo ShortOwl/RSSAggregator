@@ -78,7 +78,6 @@ async function setup(page: Page, authenticated = true) {
         email: "alex@example.com",
         created_at: feed.created_at,
         updated_at: feed.updated_at,
-        api_key: "not-for-display",
       });
     if (path.endsWith("/feeds")) {
       if (method === "POST") {
@@ -321,4 +320,145 @@ test("rejects server-invalid sessions", async ({ page }) => {
   );
   await page.goto("/");
   await expect(page).toHaveURL(/login/);
+});
+
+test("theme choices persist without changing compact reading or notifications", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.emulateMedia({ colorScheme: "light" });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (
+      message.type() === "error" &&
+      /hydration|did not match/i.test(message.text())
+    )
+      errors.push(message.text());
+  });
+  await page.goto("/settings");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("body")).toHaveCSS(
+    "background-color",
+    "rgb(246, 245, 244)",
+  );
+  await expect(page.getByLabel("Appearance", { exact: true })).toHaveValue(
+    "system",
+  );
+  await page.getByRole("checkbox", { name: /Compact stories/ }).check();
+  await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
+  await expect(page.locator("body")).toHaveCSS(
+    "background-color",
+    "rgb(25, 24, 23)",
+  );
+  await expect(page.locator("[data-sonner-toast]").first()).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
+  await page.reload();
+  await expect(page.getByLabel("Appearance", { exact: true })).toHaveValue(
+    "dark",
+  );
+  await expect(
+    page.getByRole("checkbox", { name: /Compact stories/ }),
+  ).toBeChecked();
+  await page.getByRole("link", { name: "Margin home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: first.title })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("button", { name: "Open account menu" }).click();
+  await page.getByRole("menuitemradio", { name: "Light", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: "Open account menu" }).click();
+  await page
+    .getByRole("menuitemradio", { name: "System", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(errors).toEqual([]);
+});
+
+test("dark mode applies before hydration and follows the device by default", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  // Hold the application scripts: the head script must style server-rendered content on its own.
+  await page.route("**/_next/**/*.js*", (route) => route.abort());
+  await page.goto("/login");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("body")).toHaveCSS(
+    "background-color",
+    "rgb(25, 24, 23)",
+  );
+  await page.evaluate(() => localStorage.setItem("margin.theme", "light"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});
+
+test("theme switching works when theme storage is blocked", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.addInitScript(() => {
+    const get = Storage.prototype.getItem;
+    const set = Storage.prototype.setItem;
+    Storage.prototype.getItem = function (key) {
+      if (key === "margin.theme")
+        throw new DOMException("Blocked", "SecurityError");
+      return get.call(this, key);
+    };
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "margin.theme")
+        throw new DOMException("Blocked", "SecurityError");
+      return set.call(this, key, value);
+    };
+  });
+  await page.goto("/settings");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByLabel("Appearance", { exact: true }).selectOption("light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("link", { name: "Margin home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: first.title })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});
+
+test("both themes preserve accent colors and responsive surfaces", async ({
+  page,
+}, testInfo) => {
+  await setup(page);
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    for (const path of ["/", "/feeds", "/bookmarks", "/settings", "/login"]) {
+      await page.goto(path);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+      const accent = page.locator(".bg-marigold").first();
+      await expect(accent).toHaveCSS("background-color", "rgb(255, 177, 16)");
+      await expect(accent).toHaveCSS("color", "rgb(0, 0, 0)");
+      await page.screenshot({
+        path: `test-results/${testInfo.project.name}-${theme}-${path.slice(1) || "home"}.png`,
+        fullPage: true,
+      });
+    }
+    await page.goto("/feeds");
+    await page.getByRole("button", { name: "Add a feed", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCSS(
+      "background-color",
+      theme === "dark" ? "rgb(36, 35, 33)" : "rgb(255, 255, 255)",
+    );
+    await page.screenshot({
+      path: `test-results/${testInfo.project.name}-${theme}-dialog.png`,
+      fullPage: true,
+    });
+  }
 });

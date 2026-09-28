@@ -53,7 +53,7 @@ func TestHandleGetFeeds(t *testing.T) {
 				query.WillReturnRows(rows).RowsWillBeClosed()
 			}
 			w := httptest.NewRecorder()
-			New(database.New(db), "test-secret").HandleGetFeeds(w, httptest.NewRequest("GET", target, nil))
+			New(database.New(db), "test-secret", "", "").HandleGetFeeds(w, httptest.NewRequest("GET", target, nil))
 			if tt.dbError {
 				if w.Code != 500 || w.Body.String() != `{"error":"Error fetching feeds"}` {
 					t.Errorf("unexpected failure: %d %s", w.Code, w.Body.String())

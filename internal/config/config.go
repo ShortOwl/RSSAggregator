@@ -16,6 +16,8 @@ type Config struct {
 	Port              string
 	DatabaseURL       string
 	JWTSecret         string
+	SMTPEmail         string
+	SMTPPassword      string
 	ScrapeInterval    time.Duration
 	ScrapeConcurrency int
 	PostRetentionDays int32
@@ -46,6 +48,11 @@ func Load() Config {
 		log.Fatal("JWT_SECRET must be at least 32 characters")
 	}
 
+	smtpEmail := os.Getenv("SMTP_EMAIL")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	if smtpEmail == "" || smtpPassword == "" {
+		log.Fatal("SMTP_EMAIL AND SMTP_PASSWORD are required")
+	}
 	retentionDays, err := parseRetentionDays(os.Getenv("POST_RETENTION_DAYS"))
 	if err != nil {
 		log.Fatal(err)
@@ -55,6 +62,8 @@ func Load() Config {
 		Port:              port,
 		DatabaseURL:       dbURL,
 		JWTSecret:         jwtSecret,
+		SMTPEmail:         smtpEmail,
+		SMTPPassword:      smtpPassword,
 		ScrapeInterval:    10 * time.Minute,
 		ScrapeConcurrency: 10,
 		PostRetentionDays: retentionDays,

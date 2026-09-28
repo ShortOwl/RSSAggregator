@@ -3,7 +3,7 @@ openapi: "3.0.3"
 info:
   title: "RSS Aggregator API"
   version: "1.0.0"
-  description: "Documentation of the existing API. Register or log in, then use Authorize with the returned JWT (without the Bearer prefix). API-key authentication is also supported. All routes share the rate limiter and return X-Request-ID for tracing."
+  description: "Documentation of the existing API. Register or log in, then use Authorize with the returned JWT (without the Bearer prefix). All routes share an IP-based rate limiter and return X-Request-ID for tracing."
 servers:
   -
     url: "/v1"
@@ -11,8 +11,6 @@ servers:
 security:
   -
     BearerAuth: []
-  -
-    ApiKeyAuth: []
 tags:
   -
     name: "Health"
@@ -119,8 +117,60 @@ paths:
         required: true
         content:
           application/json:
+              schema:
+                $ref: "#/components/schemas/LoginRequest"
+  /forgot-password:
+    post:
+      tags:
+        - "Authentication"
+      summary: "Request a password recovery code"
+      operationId: "postForgotPassword"
+      description: "Returns the same message whether or not the email is registered. A registered user receives a six-digit code that expires after 10 minutes."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
             schema:
-              $ref: "#/components/schemas/LoginRequest"
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: "Generic confirmation."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+  /reset-password:
+    post:
+      tags:
+        - "Authentication"
+      summary: "Reset a password using an email code"
+      operationId: "postResetPassword"
+      description: "Consumes a valid, unexpired code and stores the new password using bcrypt. Invalid, expired, and reused codes receive the same error."
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "200":
+          description: "Password updated."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /feeds:
     get:
       tags:
@@ -416,11 +466,6 @@ components:
       type: "http"
       scheme: "bearer"
       bearerFormat: "JWT"
-    ApiKeyAuth:
-      type: "apiKey"
-      in: "header"
-      name: "Authorization"
-      description: "Enter the complete value: ApiKey <your-api-key>. This is an alternative to Bearer JWT."
   parameters:
     Limit:
       name: "limit"
@@ -511,7 +556,7 @@ components:
           schema:
             $ref: "#/components/schemas/Error"
     TooManyRequests:
-      description: "Rate limit exceeded: 5 requests/second with a burst of 10 per API key or IP address."
+      description: "Rate limit exceeded: 5 requests/second with a burst of 10 per IP address."
       content:
         application/json:
           schema:
@@ -533,7 +578,6 @@ components:
         - "updated_at"
         - "name"
         - "email"
-        - "api_key"
       properties:
         id:
           type: "string"
@@ -547,8 +591,6 @@ components:
         name:
           type: "string"
         email:
-          type: "string"
-        api_key:
           type: "string"
     Feed:
       type: "object"
@@ -671,6 +713,43 @@ components:
           format: "password"
           writeOnly: true
           example: "example-password"
+    ForgotPasswordRequest:
+      type: "object"
+      required:
+        - "email"
+      properties:
+        email:
+          type: "string"
+          format: "email"
+          example: "alex@example.com"
+    ResetPasswordRequest:
+      type: "object"
+      required:
+        - "email"
+        - "otp"
+        - "password"
+      properties:
+        email:
+          type: "string"
+          format: "email"
+          example: "alex@example.com"
+        otp:
+          type: "string"
+          pattern: "^[0-9]{6}$"
+          example: "482913"
+        password:
+          type: "string"
+          format: "password"
+          writeOnly: true
+          description: "Must be between 8 and 72 bytes."
+          example: "NewPassword123"
+    MessageResponse:
+      type: "object"
+      required:
+        - "message"
+      properties:
+        message:
+          type: "string"
     CreateFeedRequest:
       type: "object"
       properties:

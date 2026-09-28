@@ -14,8 +14,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/error-state";
+import { Select } from "@/components/ui/select";
+import { useTheme } from "@/components/theme-provider";
+import { parseTheme } from "@/lib/theme";
 export function ProfileSettings() {
   const { signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const user = useQuery({
     queryKey: keys.user,
     queryFn: ({ signal }) => api<User>("/users", { signal }),
@@ -56,17 +60,15 @@ export function ProfileSettings() {
             ) : (
               <dl className="space-y-5">
                 <div>
-                  <dt className="text-xs text-black/50">Name</dt>
+                  <dt className="text-xs text-ink-50">Name</dt>
                   <dd className="mt-1 font-medium">{user.data.name}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-black/50">Email address</dt>
+                  <dt className="text-xs text-ink-50">Email address</dt>
                   <dd className="mt-1 break-all">{user.data.email}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-black/50">
-                    Reading with us since
-                  </dt>
+                  <dt className="text-xs text-ink-50">Reading with us since</dt>
                   <dd className="mt-1 text-sm">
                     {dateLabel(user.data.created_at)}
                   </dd>
@@ -81,12 +83,26 @@ export function ProfileSettings() {
                 Reading preferences
               </h2>
             </div>
+            <div className="mb-5 flex items-center justify-between gap-6">
+              <label htmlFor="theme" className="text-sm font-medium">
+                Appearance
+              </label>
+              <Select
+                id="theme"
+                value={theme}
+                onChange={(event) => setTheme(parseTheme(event.target.value))}
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+              </Select>
+            </div>
             <label className="flex cursor-pointer items-center justify-between gap-6">
               <span>
                 <span className="block text-sm font-medium">
                   Compact stories
                 </span>
-                <span className="mt-1 block text-sm text-graphite">
+                <span className="mt-1 block text-sm text-muted">
                   Show headlines without article previews.
                 </span>
               </span>
@@ -97,16 +113,15 @@ export function ProfileSettings() {
                 className="size-5 accent-notion-blue"
               />
             </label>
-            <p className="mt-5 border-t border-black/[0.08] pt-4 text-xs text-black/40">
-              Saved in this browser. Your reading space always uses the light
-              theme.
+            <p className="mt-5 border-t border-foreground/[0.08] pt-4 text-xs text-ink-40">
+              Saved in this browser. System follows your device’s appearance.
             </p>
           </Card>
           <Card>
             <h2 className="text-[22px] font-semibold tracking-tight">
               Until next time.
             </h2>
-            <p className="mt-2 text-sm text-graphite">
+            <p className="mt-2 text-sm text-muted">
               Your feeds and bookmarks will be here when you return.
             </p>
             <Button variant="secondary" className="mt-5" onClick={signOut}>

@@ -16,7 +16,7 @@ export function PostFiltersBar({
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row">
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-3.5 size-4 text-black/40" />
+        <Search className="absolute left-3 top-3.5 size-4 text-ink-40" />
         <Input
           aria-label="Search posts"
           placeholder="Find a story, an idea, a little inspiration…"

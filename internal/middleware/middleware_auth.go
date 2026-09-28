@@ -15,7 +15,7 @@ import (
 // AuthedHandler is a handler that also receives the authenticated user.
 type AuthedHandler func(http.ResponseWriter, *http.Request, database.User)
 
-// WithAuth accepts either a Bearer JWT or an API key before calling handler.
+// WithAuth requires a Bearer JWT before calling handler.
 func WithAuth(db *database.Queries, jwtSecret string, handler AuthedHandler) http.HandlerFunc {
 	// returned handler ne yaad che db connection,jwtSecret ane authedhandler malse.
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,28 +26,16 @@ func WithAuth(db *database.Queries, jwtSecret string, handler AuthedHandler) htt
 			return
 		}
 
-		var (
-			user database.User
-			err  error
-		)
-
-		switch {
-		case strings.EqualFold(parts[0], "Bearer"):
-			userID, tokenError := auth.ValidateJWT(parts[1], jwtSecret)
-			if tokenError != nil {
-				response.WithError(w, http.StatusUnauthorized, "token is expired or invalid")
-
-				return
-			}
-			user, err = db.GetUserByID(r.Context(), userID)
-
-		case strings.EqualFold(parts[0], "ApiKey"):
-			user, err = db.GetUserByAPIKey(r.Context(), parts[1])
-
-		default:
+		if !strings.EqualFold(parts[0], "Bearer") {
 			response.WithError(w, http.StatusUnauthorized, "Unsupported authentication scheme")
 			return
 		}
+		userID, tokenError := auth.ValidateJWT(parts[1], jwtSecret)
+		if tokenError != nil {
+			response.WithError(w, http.StatusUnauthorized, "token is expired or invalid")
+			return
+		}
+		user, err := db.GetUserByID(r.Context(), userID)
 
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {

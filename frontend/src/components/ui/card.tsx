@@ -4,7 +4,7 @@ export function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "rounded-xl border border-black/[0.08] bg-white p-6",
+        "rounded-xl border border-foreground/[0.08] bg-surface p-6",
         className,
       )}
       {...props}

@@ -80,7 +80,7 @@ export function AddFeedDialog() {
         <DialogTitle className="pr-8 text-[22px] font-semibold tracking-tight">
           A new voice to follow.
         </DialogTitle>
-        <DialogDescription className="mt-2 text-sm text-graphite">
+        <DialogDescription className="mt-2 text-sm text-muted">
           Add an RSS or Atom feed to your reading space.
         </DialogDescription>
         <form onSubmit={submit} className="mt-6 space-y-5">
@@ -108,7 +108,7 @@ export function AddFeedDialog() {
             />
           </div>
           {created && mutation.isError && (
-            <p className="text-sm text-graphite">
+            <p className="text-sm text-muted">
               Your feed was created. Following it didn’t finish; retry below
               without creating it again.
             </p>
@@ -118,7 +118,7 @@ export function AddFeedDialog() {
               {validation || mutation.error?.message}
             </p>
           )}
-          <p className="text-xs leading-relaxed text-black/50">
+          <p className="text-xs leading-relaxed text-ink-50">
             Stories arrive after the next feed refresh, usually within 10
             minutes.
           </p>

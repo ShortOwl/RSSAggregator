@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -132,24 +131,5 @@ func TestJWTRejectsEmptySecret(t *testing.T) {
 		if _, err := ValidateJWT(token, secret); err == nil {
 			t.Error("ValidateJWT accepted an empty secret")
 		}
-	}
-}
-
-func TestGetAPIKey(t *testing.T) {
-	for _, tt := range []struct {
-		header, want string
-	}{
-		{"ApiKey example-key", "example-key"},
-		{"  apikey   example-key  ", "example-key"},
-		{"", ""}, {"ApiKey", ""}, {"Bearer token", ""}, {"ApiKey one two", ""},
-	} {
-		t.Run(tt.header, func(t *testing.T) {
-			headers := http.Header{}
-			headers.Set("Authorization", tt.header)
-			got, err := GetAPIKey(headers)
-			if got != tt.want || (err != nil) != (tt.want == "") {
-				t.Fatalf("GetAPIKey() = %q, %v; want %q", got, err, tt.want)
-			}
-		})
 	}
 }

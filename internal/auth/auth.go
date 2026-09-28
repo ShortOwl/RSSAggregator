@@ -3,7 +3,6 @@ package auth
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -96,26 +95,4 @@ func ValidateJWT(tokenString, secret string) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("parse JWT subject: %w", err)
 	}
 	return userID, nil
-}
-
-// GetAPIKey extracts an API key from an Authorization header.
-
-// Example: ApiKey <key>
-func GetAPIKey(headers http.Header) (string, error) {
-	val := headers.Get("Authorization")
-	if val == "" {
-		return "", errors.New("no authentication info found")
-	}
-
-	vals := strings.Fields(val)
-
-	if len(vals) != 2 {
-		return "", errors.New("authentication header malformed")
-	}
-
-	if !strings.EqualFold(vals[0], "ApiKey") {
-		return "", errors.New("authentication header malformed")
-	}
-
-	return vals[1], nil
 }

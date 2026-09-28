@@ -26,7 +26,7 @@ export function LoadMore({
               : "Load more stories"}
         </Button>
       ) : (
-        <p className="text-xs text-black/40">
+        <p className="text-xs text-ink-40">
           You’re all caught up. A little space to think.
         </p>
       )}

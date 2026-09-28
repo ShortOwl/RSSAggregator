@@ -19,10 +19,10 @@ export function PostCard({
   const description = excerpt(post.description);
   const url = safeUrl(post.url);
   return (
-    <Card className="group transition-colors duration-200 hover:border-black/20">
+    <Card className="group transition-colors duration-200 hover:border-foreground/20">
       <article>
-        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-black/50">
-          <span className="font-medium text-black/70">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-50">
+          <span className="font-medium text-ink-70">
             {feedName || hostname(post.url)}
           </span>
           <span aria-hidden="true">·</span>
@@ -46,7 +46,7 @@ export function PostCard({
               className="hover:text-notion-blue"
             >
               {post.title || "Untitled story"}
-              <ArrowUpRight className="ml-2 inline size-4 text-black/30" />
+              <ArrowUpRight className="ml-2 inline size-4 text-ink-30" />
               <span className="sr-only"> (opens in a new tab)</span>
             </a>
           ) : (
@@ -54,12 +54,12 @@ export function PostCard({
           )}
         </h2>
         {!compact && description && (
-          <p className="mt-3 line-clamp-3 text-sm leading-[1.6] text-graphite">
+          <p className="mt-3 line-clamp-3 text-sm leading-[1.6] text-muted">
             {description}
           </p>
         )}
         <div className="mt-4 flex items-center justify-between gap-2">
-          <span className="text-xs text-black/40">{hostname(post.url)}</span>
+          <span className="text-xs text-ink-40">{hostname(post.url)}</span>
           <PostActions id={post.id} read={read} bookmarked={bookmarked} />
         </div>
       </article>

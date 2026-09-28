@@ -9,8 +9,8 @@ const buttonVariants = cva(
       variant: {
         default: "bg-notion-blue text-white hover:opacity-90",
         secondary: "bg-sky-tint text-notion-blue hover:bg-sky-tint/70",
-        ghost: "text-black/95 hover:bg-black/5",
-        outline: "border border-black/90 rounded-sm hover:bg-black/5",
+        ghost: "text-ink-95 hover:bg-foreground/5",
+        outline: "border border-foreground/90 rounded-sm hover:bg-foreground/5",
       },
       size: {
         default: "px-[15px] py-1.5 min-h-9",

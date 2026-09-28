@@ -66,16 +66,14 @@ export function FeedCard({
       <h2 className="break-words text-[22px] font-semibold leading-[1.27] tracking-tight">
         {feed.name}
       </h2>
-      <p className="mt-2 break-all text-sm text-graphite">
-        {hostname(feed.url)}
-      </p>
+      <p className="mt-2 break-all text-sm text-muted">{hostname(feed.url)}</p>
       <div className="mt-auto pt-6">
         {url && (
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-black/50 hover:text-notion-blue"
+            className="inline-flex items-center gap-1 text-xs text-ink-50 hover:text-notion-blue"
           >
             Visit source
             <ArrowUpRight size={14} />

@@ -12,7 +12,7 @@ export default function AuthLayout({
       </Link>
       <div className="grid items-center gap-16 py-16 lg:grid-cols-2 lg:py-20">
         <section className="mx-auto max-w-xl text-center lg:text-left">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs text-graphite">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1 text-xs text-muted">
             <span className="size-2 rounded-full bg-notion-blue" />A little less
             noise. A lot more perspective.
           </div>
@@ -20,11 +20,11 @@ export default function AuthLayout({
             Make room
             <br />
             for{" "}
-            <span className="inline-block rounded-full bg-marigold px-6 py-2">
+            <span className="inline-block rounded-full bg-marigold text-black px-6 py-2">
               curiosity.
             </span>
           </h1>
-          <p className="mx-auto mt-8 max-w-md font-serif text-lg leading-[1.56] text-graphite lg:mx-0">
+          <p className="mx-auto mt-8 max-w-md font-serif text-lg leading-[1.56] text-muted lg:mx-0">
             Your favorite voices, all in one quiet place. Follow what matters.
             Save what stays with you.
           </p>
@@ -60,7 +60,7 @@ export default function AuthLayout({
         </section>
         {children}
       </div>
-      <p className="text-center text-xs text-black/40">
+      <p className="text-center text-xs text-ink-40">
         A reading ritual, made your own.
       </p>
     </main>
