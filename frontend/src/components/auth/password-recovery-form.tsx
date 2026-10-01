@@ -11,6 +11,23 @@ import { Label } from "@/components/ui/label";
 
 type Step = "email" | "code" | "done";
 
+async function recoveryRequest(path: string, body: Record<string, string>) {
+  // A free backend can take about a minute to wake; never leave the form busy forever.
+  const signal = AbortSignal.timeout(90_000);
+  try {
+    return await api<{ message: string }>(
+      path,
+      { method: "POST", body: JSON.stringify(body), signal },
+      false,
+    );
+  } catch (cause) {
+    if (signal.aborted) {
+      throw new Error("The request took too long. Please try again.");
+    }
+    throw cause;
+  }
+}
+
 export function PasswordRecoveryForm() {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -25,11 +42,7 @@ export function PasswordRecoveryForm() {
     setNotice("");
     setBusy(true);
     try {
-      await api<{ message: string }>(
-        "/forgot-password",
-        { method: "POST", body: JSON.stringify({ email }) },
-        false,
-      );
+      await recoveryRequest("/forgot-password", { email });
       if (otpInput.current) otpInput.current.value = "";
       setNotice("If this email is registered, a new code is on its way.");
     } catch (cause) {
@@ -64,19 +77,11 @@ export function PasswordRecoveryForm() {
     setBusy(true);
     try {
       if (step === "email") {
-        await api<{ message: string }>(
-          "/forgot-password",
-          { method: "POST", body: JSON.stringify({ email: address }) },
-          false,
-        );
+        await recoveryRequest("/forgot-password", { email: address });
         setEmail(address);
         setStep("code");
       } else {
-        await api<{ message: string }>(
-          "/reset-password",
-          { method: "POST", body: JSON.stringify({ email, otp, password }) },
-          false,
-        );
+        await recoveryRequest("/reset-password", { email, otp, password });
         setStep("done");
       }
     } catch (cause) {
@@ -178,7 +183,9 @@ export function PasswordRecoveryForm() {
           )}
           <Button type="submit" className="w-full py-3" disabled={busy}>
             {busy
-              ? "One moment…"
+              ? step === "email"
+                ? "Sending code…"
+                : "Resetting password…"
               : step === "email"
                 ? "Send code"
                 : "Reset password"}

@@ -30,7 +30,7 @@ Set `NEXT_PUBLIC_API_URL` to the Go API including `/v1` (default `http://localho
 
 Login and registration use `/login` and `/register`. The issued JWT is stored in browser local storage and sent as a Bearer token directly to the Go API. Sessions end at the existing 24-hour expiry or on a protected 401 response; there is no refresh endpoint. Signing out clears credentials and the query cache, including across tabs. This browser-persisted token is accessible to JavaScript; an HttpOnly-cookie deployment would require a separate server transport design.
 
-Password recovery uses public `/forgot-password` and `/reset-password` requests. The first step always shows the same confirmation, whether or not the email is registered. The second step submits the six-digit code and a new password. The Go server must have Gmail SMTP configured and migration 012 applied.
+Password recovery uses public `/forgot-password` and `/reset-password` requests. The first step always shows the same confirmation, whether or not the email is registered. The second step submits the six-digit code and a new password. The Go server must have Brevo configured and migration 012 applied. The recovery form times out stalled requests so readers can retry.
 
 Posts use `/posts` with `search`, `feed_id`, `unread`, `limit`, and the server's opaque `cursor`. Bookmarks use `/bookmarks` with pagination only. An empty `next_cursor` ends the list. Infinite scrolling includes a manual load/retry button. Search is debounced. Failed requests honor rate-limit delays through TanStack Query retries.
 

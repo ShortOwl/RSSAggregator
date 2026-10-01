@@ -8,13 +8,13 @@ import "github.com/ShortOwl/RSSAggregator/internal/database"
 // variables and make testing easier — you can create a Handler with a
 // mock database for tests.
 type Handler struct {
-	DB           *database.Queries
-	JWTSecret    string
-	SMTPEmail    string
-	SMTPPassword string
+	DB               *database.Queries
+	JWTSecret        string
+	BrevoAPIKey      string
+	BrevoSenderEmail string
 }
 
 // New creates a new Handler with its shared dependencies.
-func New(db *database.Queries, jwtSecret, smtpEmail, smtpPassword string) *Handler {
-	return &Handler{DB: db, JWTSecret: jwtSecret, SMTPEmail: smtpEmail, SMTPPassword: smtpPassword}
+func New(db *database.Queries, jwtSecret, brevoAPIKey, brevoSenderEmail string) *Handler {
+	return &Handler{DB: db, JWTSecret: jwtSecret, BrevoAPIKey: brevoAPIKey, BrevoSenderEmail: brevoSenderEmail}
 }

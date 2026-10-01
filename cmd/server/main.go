@@ -40,7 +40,7 @@ func main() {
 
 	// 3. Create dependencies
 	db := database.New(conn) // anathi hu badhi sql queries run kravi sakis.
-	h := handler.New(db, cfg.JWTSecret, cfg.SMTPEmail, cfg.SMTPPassword)
+	h := handler.New(db, cfg.JWTSecret, cfg.BrevoAPIKey, cfg.BrevoSenderEmail)
 
 	// 4. Start background scraper
 	go scraper.Start(db, cfg.ScrapeConcurrency, cfg.ScrapeInterval, cfg.PostRetentionDays)

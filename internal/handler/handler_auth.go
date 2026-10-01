@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"crypto/subtle"
 	"database/sql"
 	"encoding/json"
@@ -77,6 +78,15 @@ func (h *Handler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		response.WithError(w, http.StatusInternalServerError, "Couldn't generate JWT token")
 		return
 	}
+	// Welcome email send kro.
+	go func(email string) {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+
+		if err := h.sendWelcomeEmail(ctx, email); err != nil {
+			slog.Error("welcome email failed", "error", err)
+		}
+	}(user.Email)
 
 	response.WithJSON(w, http.StatusOK, authResponse{
 		Token:     token,
@@ -163,7 +173,8 @@ func (h *Handler) HandleForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.DB.GetUserByEmail(r.Context(), email)
 	if err == nil {
-		otp, err := auth.GenerateOTP()
+		var otp string
+		otp, err = auth.GenerateOTP()
 		if err == nil {
 			now := time.Now().UTC()
 			err = h.DB.SavePasswordReset(r.Context(), database.SavePasswordResetParams{
@@ -173,7 +184,7 @@ func (h *Handler) HandleForgotPassword(w http.ResponseWriter, r *http.Request) {
 				ExpiresAt: now.Add(10 * time.Minute),
 			})
 			if err == nil {
-				err = h.sendPasswordResetEmail(email, otp)
+				err = h.sendPasswordResetEmail(r.Context(), email, otp)
 			}
 		}
 	}

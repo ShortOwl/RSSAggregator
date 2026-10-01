@@ -85,11 +85,11 @@ Use `GET /v1/posts?unread=true` to return only unread posts.
    PORT=8080
    DB_URL=postgres://username:password@localhost:5432/rssagg?sslmode=disable
    JWT_SECRET=replace-with-a-random-secret-at-least-32-characters-long
-   SMTP_EMAIL=your-gmail-address@gmail.com
-   SMTP_PASSWORD=your-google-app-password
+   BREVO_API_KEY=your-brevo-api-key
+   BREVO_SENDER_EMAIL=your-verified-sender@gmail.com
    ```
 
-   Password recovery sends codes through Gmail SMTP. Use a [Google App Password](https://support.google.com/accounts/answer/2461835) for `SMTP_PASSWORD`; the server requires both SMTP variables at startup. Keep `.env` out of version control.
+   Password recovery codes and welcome emails use the [Brevo transactional email API](https://developers.brevo.com/docs/send-a-transactional-email) over HTTPS. Welcome emails are attempted in the background after successful registration, so a delivery failure does not block signup. On Brevo's Free plan, create and verify a sender email address, enable transactional sending for your account, then create an **API key** (not an SMTP key). Set these two variables in Render as well. A Gmail sender can be used without buying a domain; Brevo temporarily replaces its visible sender address with a Brevo-managed address for delivery. Check your Brevo transactional logs and the recipient's spam folder if an email does not arrive. Remove the old `SMTP_EMAIL` and `SMTP_PASSWORD` settings, and keep `.env` out of version control.
 
 3. **Run database migrations**
 
