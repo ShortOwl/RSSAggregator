@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  UserRound,
   Sun,
   Moon,
   Monitor,
@@ -69,6 +70,26 @@ export function AppHeader() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() =>
+                setTheme(
+                  document.documentElement.dataset.theme === "dark"
+                    ? "light"
+                    : "dark",
+                )
+              }
+            >
+              <span className="dark:hidden">
+                <Moon size={20} />
+                <span className="sr-only">Switch to dark mode</span>
+              </span>
+              <span className="hidden dark:inline">
+                <Sun size={20} />
+                <span className="sr-only">Switch to light mode</span>
+              </span>
+            </Button>
             <Link
               href="/settings"
               aria-label="Settings and profile"
@@ -86,7 +107,8 @@ export function AppHeader() {
                   size="icon"
                   aria-label="Open account menu"
                 >
-                  <Menu size={20} />
+                  <Menu size={20} className="md:hidden" />
+                  <UserRound size={20} className="hidden md:block" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>

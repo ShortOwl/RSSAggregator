@@ -462,3 +462,29 @@ test("both themes preserve accent colors and responsive surfaces", async ({
     });
   }
 });
+
+test("header theme toggle resolves System and persists across navigation and reload", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Switch to light mode", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page
+    .getByRole("button", { name: "Switch to dark mode", exact: true })
+    .click();
+  await page.getByRole("link", { name: "Settings and profile" }).click();
+  await expect(page.getByLabel("Appearance", { exact: true })).toHaveValue(
+    "dark",
+  );
+  await page.getByLabel("Appearance", { exact: true }).selectOption("system");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(
+    page.getByRole("button", { name: "Switch to dark mode", exact: true }),
+  ).toBeVisible();
+});

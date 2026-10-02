@@ -7,11 +7,13 @@ export function LoadMore({
   loading,
   error,
   load,
+  kind = "stories",
 }: {
   hasMore: boolean;
   loading: boolean;
   error: boolean;
   load: () => void;
+  kind?: "stories" | "feeds";
 }) {
   const callback = useCallback(() => load(), [load]);
   const ref = useInfiniteScroll(callback, hasMore && !loading && !error);
@@ -20,14 +22,16 @@ export function LoadMore({
       {hasMore ? (
         <Button variant="ghost" disabled={loading} onClick={load}>
           {loading
-            ? "Gathering more stories…"
+            ? `Gathering more ${kind}…`
             : error
               ? "Retry loading more"
-              : "Load more stories"}
+              : `Load more ${kind}`}
         </Button>
       ) : (
         <p className="text-xs text-ink-40">
-          You’re all caught up. A little space to think.
+          {kind === "feeds"
+            ? "All feeds shown."
+            : "You’re all caught up. A little space to think."}
         </p>
       )}
     </div>

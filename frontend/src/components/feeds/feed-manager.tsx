@@ -141,6 +141,7 @@ export function FeedManager() {
       )}
       {all.length > 0 && (
         <LoadMore
+          kind="feeds"
           hasMore={!!query.hasNextPage}
           loading={query.isFetchingNextPage}
           error={query.isFetchNextPageError}

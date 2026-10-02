@@ -1,11 +1,12 @@
 "use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Plus, Rss, ArrowUpRight } from "lucide-react";
+import { Check, Plus, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { keys } from "@/lib/query-keys";
 import { hostname, safeUrl } from "@/lib/format";
 import type { Feed, FeedFollow } from "@/lib/types";
+import { SourceMark } from "@/components/shared/source-mark";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 export function FeedCard({
@@ -39,9 +40,7 @@ export function FeedCard({
   return (
     <Card className="flex h-full flex-col">
       <div className="mb-6 flex items-start justify-between">
-        <span className="flex size-10 items-center justify-center rounded-lg bg-sky-tint">
-          <Rss size={20} className="text-notion-blue" />
-        </span>
+        <SourceMark name={feed.name} large />
         <Button
           variant={follow ? "ghost" : "secondary"}
           disabled={!ready || mutation.isPending}

@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import type { Post } from "@/lib/types";
 import { dateLabel, excerpt, hostname, safeUrl } from "@/lib/format";
+import { SourceMark } from "@/components/shared/source-mark";
 import { Card } from "@/components/ui/card";
 import { PostActions } from "./post-actions";
 export function PostCard({
@@ -16,12 +17,14 @@ export function PostCard({
   bookmarked?: boolean;
   compact: boolean;
 }) {
-  const description = excerpt(post.description);
+  const preview = excerpt(post.description);
+  const description = /^comments[.!]?$/i.test(preview) ? "" : preview;
   const url = safeUrl(post.url);
   return (
     <Card className="group transition-colors duration-200 hover:border-foreground/20">
       <article>
         <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-50">
+          <SourceMark name={feedName || hostname(post.url)} />
           <span className="font-medium text-ink-70">
             {feedName || hostname(post.url)}
           </span>

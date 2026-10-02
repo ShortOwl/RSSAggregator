@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Rss } from "lucide-react";
+import { ArrowRight, Bookmark, Rss } from "lucide-react";
 import { usePosts } from "@/hooks/use-posts";
 import { useFeeds, useFollows } from "@/hooks/use-feeds";
 import { usePostState } from "@/hooks/use-post-state";
@@ -81,7 +81,9 @@ export function PostList({ mode }: { mode: "posts" | "bookmarks" }) {
                   ? "Search results"
                   : "The latest"}
             </p>
-            <span className="text-xs text-ink-40">Newest first</span>
+            {posts.length > 0 && (
+              <span className="text-xs text-ink-40">Newest first</span>
+            )}
           </div>
           {query.isPending ? (
             <div
@@ -107,6 +109,7 @@ export function PostList({ mode }: { mode: "posts" | "bookmarks" }) {
             />
           ) : posts.length === 0 ? (
             <EmptyState
+              icon={saved ? Bookmark : undefined}
               title={
                 saved
                   ? "Keep a little inspiration."
@@ -173,7 +176,13 @@ export function PostList({ mode }: { mode: "posts" | "bookmarks" }) {
             </p>
           )}
         </section>
-        <ReadingSidebar feeds={feeds} />
+        <ReadingSidebar
+          feeds={feeds}
+          onSelectFeed={
+            saved ? undefined : (feed_id) => setFilters({ ...filters, feed_id })
+          }
+          selectedFeed={filters.feed_id}
+        />
       </div>
     </>
   );
